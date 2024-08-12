@@ -276,11 +276,13 @@ def new_regime_costs_less(
     ) -> bool:
     return old_regime_cost > new_regime_cost
 
+
 def old_regime_is_too_costly(
         old_regime_cost: float,
         threshold: float,
     ) -> bool:
     return old_regime_cost > threshold
+
 
 def new_regime_is_advised(
         old_regime_cost: float,
@@ -296,3 +298,11 @@ def new_regime_is_advised(
         threshold=threshold,
     )
     return cond
+
+
+def compare_models(
+        model_a: MyVariationalGaussianHMM,
+        model_b: MyVariationalGaussianHMM,
+        X: np.ndarray,
+    ):
+    regimes_a = model_a.predict(X)
