@@ -50,14 +50,20 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 class RegimeClassifier():
     # The HMM is completely determined by start probability vector Pi, transition probability matrix A, and emission probability theta
     model: MyVariationalGaussianHMM
+    regime: np.ndarray
     models: list[MyVariationalGaussianHMM]
     first_config: dict
     config: dict
+
+    @property
+    def prev_regime(self) -> np.ndarray:
+        return self.regimes[-1]
 
     def _store_snapshot(self) -> None:
         """Store model and parameters startprob_, transmat_, means_ and covars_.
         Called after every fit."""
         self.models.append(self.model)
+        self.regimes.append(self.regime)
         self.start_probabilities.append(self.model.startprob_)
         self.transition_matrices.append(self.model.transmat_)
         self.means.append(self.model.means_)
@@ -78,6 +84,7 @@ class RegimeClassifier():
                 score = score_
         
         self.model = model
+        self.regime = self.model.predict(X)
         self._store_snapshot()
 
     def fit(self, X, lengths=None) -> None:
@@ -111,6 +118,8 @@ class RegimeClassifier():
         if old_model_is_more_costly:
             self.model = model_transferred_w_added_regime
             self.config = config
+        
+        self.regime = self.model.predict(X)
         self._store_snapshot()
     
     def predict(self, X, lengths=None) -> None:
@@ -143,6 +152,8 @@ class RegimeClassifier():
         self.first_config = deepcopy(config)
         self.config = config
 
+        self.models = []
+        self.regimes = []
         self.start_probabilities = []
         self.transition_matrices = []
         self.means = []
