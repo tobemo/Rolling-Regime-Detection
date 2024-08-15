@@ -100,8 +100,11 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 
     @staticmethod
     def from_json(config: str):
-        # re-init
         config = json.loads(config)
+        return MyVariationalGaussianHMM.from_config(config)
+    
+    @staticmethod
+    def from_config(config: dict):
         model = MyVariationalGaussianHMM.__init__(
             n_components=config["n_components"],
             init_params=config["init_params"],
@@ -149,7 +152,8 @@ class RegimeClassifier():
     def first_config(self) -> dict:
         if len(self.models) > 0:
             return self.models[0].config
-        else: return self._first_config
+        else:
+            return self._first_config
     @first_config.setter
     def first_config(self, config) -> None:
         self._first_config = config
@@ -284,6 +288,19 @@ class RegimeClassifier():
     @property
     def n_components(self) -> int:
         return self.model.n_components
+    
+    @staticmethod
+    def from_jsons(configs: list[str]):
+        if len(configs) == 0:
+            raise RuntimeError("Can't initialize 'RegimeClassifier' since configs is an empty list.")
+        # assumes jsons are sorted
+        configs = configs[-128:]
+        rc = object.__new__(RegimeClassifier)
+        for config in configs:
+            rc.models.append(
+                MyVariationalGaussianHMM.from_json(config)
+            )
+        return rc
 
 
 def copy_model(
