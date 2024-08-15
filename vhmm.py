@@ -57,11 +57,18 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 
 class RegimeClassifier():
     # The HMM is completely determined by start probability vector Pi, transition probability matrix A, and emission probability theta
-    model: MyVariationalGaussianHMM
-    regime: np.ndarray
+    _model: MyVariationalGaussianHMM
     models: list[MyVariationalGaussianHMM]
     first_config: dict
     config: dict
+
+    @property
+    def model(self) -> MyVariationalGaussianHMM:
+        return self._model
+    @model.setter
+    def model(self, model) -> None:
+        self.models.append(model)
+        self._model = model
     
     @property
     def transition_threshold(self) -> float:
@@ -75,20 +82,6 @@ class RegimeClassifier():
         mean = costs.mean()
         std = costs.std()
         return mean + 2 * std
-
-    @property
-    def prev_regime(self) -> np.ndarray:
-        return self.regimes[-1]
-
-    def _store_snapshot(self) -> None:
-        """Store model and parameters startprob_, transmat_, means_ and covars_.
-        Called after every fit."""
-        self.models.append(self.model)
-        self.regimes.append(self.regime)
-        self.start_probabilities.append(self.model.startprob_)
-        self.transition_matrices.append(self.model.transmat_)
-        self.means.append(self.model.means_)
-        self.covariance_matrices.append(self.model.covars_)
 
     def initial_fit(self, X, lengths=None, k: int = 10) -> None:
         """Train k models and keep best one.
@@ -106,8 +99,6 @@ class RegimeClassifier():
                 score = score_
         
         self.model = model
-        self.regime = self.model.predict(X)
-        self._store_snapshot()
 
     def fit(self, X, lengths=None) -> None:
         """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs is kept.
@@ -118,20 +109,20 @@ class RegimeClassifier():
         # check if model_n+1_t costs less than model_n_t,
         #  AND model_n_t is costlier than a certain threshold (indicating that for the current data at t it fails to effectively capture all regimes)
 
-        if not hasattr(self, 'model_'):
+        if not hasattr(self, '_model'):
             return self.initial_fit(X, lengths=lengths)
         
-        # previous model;
+        # model 1: previous model
         model_previous = self.model
 
-        # transfer learn with same number of regimes as previous
+        # model 2: transfer learn with same number of regimes as previous
         model_new = copy_model(
             old_model=self.model,
             config=self.config,
         )
         model_new.fit(X, lengths=lengths)
 
-        # transfer learn but add one extra regime
+        # model 3: transfer learn but add one extra regime
         config = deepcopy(self.config)
         config['n_components'] += 1
         model_new_added_regime = copy_model_and_add_regimes(
@@ -140,12 +131,12 @@ class RegimeClassifier():
         )
         model_new_added_regime.fit(X, lengths=lengths)
 
-        # regimes
+        # regimes for all three models
         regimes_previous = model_previous.predict(X)
         regimes_new = model_new.predict(X)
         regimes_new_added_regime = model_new_added_regime.predict(X)
 
-        # costs
+        # transition costs for both new models
         transition_cost_current_regimes = get_transition_cost_matrix(
             old_regimes=regimes_previous,
             new_regimes=regimes_new,
@@ -164,17 +155,17 @@ class RegimeClassifier():
         model_new_added_regime.transition_cost = transition_cost_added_regime
         
         # compare costs
-        self.model = model_new
+        cheapest_model = model_new
         if new_regime_is_advised(
             new_regime_cost=transition_cost_added_regime,
             old_regime_cost=transition_cost_current_regimes,
             threshold=self.transition_threshold,
         ):
-            self.model = model_new_added_regime
-            self.config = config
+            cheapest_model = model_new_added_regime
+            self.config = config # update config
         
-        self.regime = self.model.predict(X)
-        self._store_snapshot()
+        # store cheapest model
+        self.model = cheapest_model
     
     def predict(self, X, lengths=None) -> None:
         self.model.predict(X, lengths=lengths)
@@ -207,11 +198,6 @@ class RegimeClassifier():
         self.config = config
 
         self.models = []
-        self.regimes = []
-        self.start_probabilities = []
-        self.transition_matrices = []
-        self.means = []
-        self.covariance_matrices = []
 
     @property
     def is_fitted(self) -> bool:
