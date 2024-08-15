@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+from collections import deque
 
 import numpy as np
 import pandas as pd
@@ -126,7 +127,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 
 
 class RegimeClassifier():
-    models: list[MyVariationalGaussianHMM] = []
+    models: list[MyVariationalGaussianHMM] = deque(maxlen=128)
     """List of all trained models."""
     @property
     def model(self) -> MyVariationalGaussianHMM:
@@ -429,13 +430,3 @@ def compare_models(
         X: np.ndarray,
     ):
     regimes_a = model_a.predict(X)
-
-
-# still need better config structure
-# when coming back from a crash
-# RegimeClassifier should not be dependant on it's constructor
-# instead it should just be initialized using a list of models
-# should each sub model be serialized, or should all submodels be serialized as being part of main model?
-
-
-# TODO: models should have a timestamp so they can be sorted
