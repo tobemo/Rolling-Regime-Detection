@@ -1,8 +1,10 @@
-import numpy as np
-from hmmlearn import vhmm
-import pandas as pd
-from scipy import stats, optimize
+import json
 from copy import deepcopy
+
+import numpy as np
+import pandas as pd
+from hmmlearn import vhmm
+from scipy import optimize, stats
 
 
 class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
@@ -32,18 +34,16 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     def __init__(
             self,
             n_components=1,
-            algorithm="viterbi",
             init_params='stmc',
             random_state=None,
             n_iter=100,
             tol=1e-6,
             verbose=False,
-            **kwargs,
         ) -> None:
         super().__init__(
             n_components=n_components, 
             covariance_type="full",
-            algorithm=algorithm,
+            algorithm="viterbi",
             init_params=init_params,
             random_state=random_state,
             n_iter=n_iter,
@@ -51,8 +51,62 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             verbose=verbose,
             params='stmc',
             implementation='scaling',
-            **kwargs,
         )
+    
+    def to_json(self) -> str:
+        config = {
+            "n_components": self.n_components,
+            "init_params": self.init_params,
+            "random_state": self.random_state,
+            "n_iter": self.random_state,
+            "tol": self.tol,
+            "verbose": self.verbose,
+            "covariance_type": self.covariance_type,
+            "startprob": self.startprob_.tolist(),
+            "transmat": self.transmat_.tolist(),
+            "means": self.means_.tolist(),
+            "covars": self.covars_.tolist(),
+            "weights": self.weights_.tolist(),
+            "precisions_cholesky": self.precisions_cholesky_.tolist(),
+            "dirichlet_concentration_prior": self.dirichlet_concentration_prior_.tolist(),
+            "mean_precision_prior": self.mean_precision_prior_.tolist(),
+            "degrees_of_freedom_prior": self.degrees_of_freedom_prior_.tolist(),
+        }
+        if self.is_fitted:
+            config["init_params"] = ""
+        return json.dumps(config)
+
+    @staticmethod
+    def from_json(config: str):
+        # re-init
+        config = json.loads(config)
+        model = MyVariationalGaussianHMM.__init__(
+            n_components=config["n_components"],
+            init_params=config["init_params"],
+            random_state=config["random_state"],
+            n_iter=config["n_iter"],
+            tol=config["tol"],
+            verbose=config["verbose"],
+        )
+        
+        # assign parameters
+        model.startprob_ = np.array(config["startprob"])
+        model.transmat_ = np.array(config["transmat"])
+        model.means_ = np.array(config["means"])
+        model.covars_ = np.array(config["covars"])
+        model.weights_ = np.array(config["weights"])
+        model.precisions_cholesky_ = np.array(config["precisions_cholesky"])
+        model.dirichlet_concentration_prior_ = np.array(
+            config["dirichlet_concentration_prior"]
+        )
+        model.mean_precision_prior_ = np.array(
+            config["mean_precision_prior"]
+        )
+        model.degrees_of_freedom_prior_ = np.array(
+            config["degrees_of_freedom_prior"]
+        )
+
+        return model
 
 
 class RegimeClassifier():
@@ -90,7 +144,7 @@ class RegimeClassifier():
         score = -np.inf
 
         for _ in range(k):
-            model_ = MyVariationalGaussianHMM.init_model(self.config)
+            model_ = MyVariationalGaussianHMM(self.config)
             model_.fit(X, lengths=lengths)
             score_ = model_.score(X)
             if score_ > score:
@@ -212,7 +266,7 @@ def copy_model(
         config: dict,
         ) -> MyVariationalGaussianHMM:
     config['init_params'] = 'mc'
-    new_model = MyVariationalGaussianHMM.init_model(config)
+    new_model = MyVariationalGaussianHMM(config)
     new_model.transmat_ = old_model.transmat_
     new_model.covars_ = old_model.covars_
     return new_model
@@ -231,7 +285,7 @@ def copy_model_and_add_regimes(
 
     # only estimate mean and covariance before fit
     config['init_params'] = 'mc'
-    new_model = MyVariationalGaussianHMM.init_model(config)
+    new_model = MyVariationalGaussianHMM(config)
     
     # regimes to add
     n = config['n_components'] - n_components
