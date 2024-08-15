@@ -21,6 +21,14 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
     
+    _transition_cost = np.inf
+    @property
+    def transition_cost(self) -> float:
+        return  self._transition_cost
+    @transition_cost.setter
+    def transition_cost(self, cost: float) -> None:
+        self._transition_cost = cost
+    
     def __init__(
             self,
             n_components=1,
@@ -53,6 +61,19 @@ class RegimeClassifier():
     models: list[MyVariationalGaussianHMM]
     first_config: dict
     config: dict
+    
+    @property
+    def transition_threshold(self) -> float:
+        """2 deviations above the mean of past transition costs.
+        Returns inf if not enough data is present."""
+        costs = [model.transition_cost for model in self.models]
+        costs = np.array(costs)
+        costs = costs[costs < np.inf]
+        if len(costs) < 8:
+            return np.inf
+        mean = costs.mean()
+        std = costs.std()
+        return mean + 2 * std
 
     def _store_snapshot(self) -> None:
         """Store model and parameters startprob_, transmat_, means_ and covars_.
@@ -64,7 +85,8 @@ class RegimeClassifier():
         self.covariance_matrices.append(self.model.covars_)
 
     def initial_fit(self, X, lengths=None, k: int = 10) -> None:
-        """Train k models and keep best one."""
+        """Train k models and keep best one.
+        This is needed to account for gradient descent getting stuck in a local minima."""
         model = self.init_model(**self.config)
         model.fit(X, lengths=lengths)
         score = model.score(X)
@@ -81,35 +103,67 @@ class RegimeClassifier():
         self._store_snapshot()
 
     def fit(self, X, lengths=None) -> None:
+        """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs is kept.
+        """
+        # compare model_n_t to model_n_t-1
+        # compare model_n+1_t to model_n_t-1
+        # get cost of both
+        # check if model_n+1_t costs less than model_n_t,
+        #  AND model_n_t is costlier than a certain threshold (indicating that for the current data at t it fails to effectively capture all regimes)
+
         if not hasattr(self, 'model_'):
             return self.initial_fit(X, lengths=lengths)
         
-        # This should train one model with n_components and one with n_components+1; and keep the best one
+        # previous model;
+        model_previous = self.model
 
-        # copy and fit model with same number of regimes as current
-        # transfer learn from previous model
-        model_transferred = copy_model(
+        # transfer learn with same number of regimes as previous
+        model_new = copy_model(
             old_model=self.model,
             config=self.config,
         )
-        model_transferred.fit(X, lengths=lengths)
+        model_new.fit(X, lengths=lengths)
 
-        # copy and fit model but add one extra regime
-        # transfer learn from newest model
+        # transfer learn but add one extra regime
         config = deepcopy(self.config)
         config['n_components'] += 1
-        model_transferred_w_added_regime = copy_model_and_add_regimes(
-            old_model=model_transferred,
+        model_new_added_regime = copy_model_and_add_regimes(
+            old_model=model_previous,
             config=config,
         )
-        model_transferred_w_added_regime.fit(X, lengths=lengths)
+        model_new_added_regime.fit(X, lengths=lengths)
+
+        # regimes
+        regimes_previous = model_previous.predict(X)
+        regimes_new = model_new.predict(X)
+        regimes_new_added_regime = model_new_added_regime.predict(X)
+
+        # costs
+        transition_cost_current_regimes = get_transition_cost_matrix(
+            old_regimes=regimes_previous,
+            new_regimes=regimes_new,
+            n_old_regimes=model_previous.n_components,
+            n_new_regimes=model_new.n_components,
+            data=X,
+        )
+        transition_cost_added_regime = get_transition_cost_matrix(
+            old_regimes=regimes_previous,
+            new_regimes=regimes_new_added_regime,
+            n_old_regimes=model_previous.n_components,
+            n_new_regimes=model_new_added_regime.n_components,
+            data=X,
+        )
+        model_new.transition_cost = transition_cost_current_regimes
+        model_new_added_regime.transition_cost = transition_cost_added_regime
         
-        # TODO: costs
-        self.model = model_transferred
-        old_model_is_more_costly = False
-        
-        if old_model_is_more_costly:
-            self.model = model_transferred_w_added_regime
+        # compare costs
+        self.model = model_new
+        if new_regime_is_advised(
+            new_regime_cost=transition_cost_added_regime,
+            old_regime_cost=transition_cost_current_regimes,
+            threshold=self.transition_threshold,
+        ):
+            self.model = model_new_added_regime
             self.config = config
         self._store_snapshot()
     
@@ -172,6 +226,7 @@ def copy_model_and_add_regimes(
         old_model: MyVariationalGaussianHMM,
         config: dict,
         ) -> MyVariationalGaussianHMM:
+    """The difference between n_components in dict and in old_model determines how many regimes are added."""
     n_components = old_model.n_components
     old_startprob = old_model.startprob_
     old_transmat = old_model.transmat_
@@ -226,12 +281,11 @@ def get_distance(u: np.ndarray, v: np.ndarray) -> float:
 
 
 def get_transition_cost_matrix(
-        old_regimes: pd.Series,
-        new_regimes: pd.Series,
+        old_regimes: np.ndarray,
+        new_regimes: np.ndarray,
         n_old_regimes: int,
         n_new_regimes: int,
-        old_data: pd.Series,
-        new_data: pd.Series,
+        data: pd.Series,
         fill_value: float = 0.
     ) -> pd.DataFrame:
     """Returns normalized cost matrix.
@@ -244,12 +298,13 @@ def get_transition_cost_matrix(
     costs = {}
     for i in range(I):
         for j in range(J):
-            u = old_data[old_regimes == i].to_numpy()
-            v = new_data[new_regimes == j].to_numpy()
+            u = data[old_regimes == i]
+            v = data[new_regimes == j]
             if len(u) == 0 or len(v) == 0:
                 costs[(i,j)] = np.inf
-                continue
-            costs[(i,j)] = get_distance(u, v)
+            else:
+                costs[(i,j)] = get_distance(u, v)
+    
     costs = pd.Series(costs)
     costs.index.names = ['old/I', 'new/J']
     costs = costs.unstack(level=-1)
