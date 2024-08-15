@@ -1,6 +1,7 @@
 import json
-from copy import deepcopy
+import time
 from collections import deque
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -44,6 +45,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             "verbose": self.verbose,
         }
     
+    timestamp: int
     def __init__(
             self,
             n_components=1,
@@ -52,7 +54,9 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             n_iter=100,
             tol=1e-6,
             verbose=False,
+            timestamp: int = None,
         ) -> None:
+        self.timestamp = timestamp or int(time.time())
         super().__init__(
             n_components=n_components, 
             covariance_type="full",
@@ -69,6 +73,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     def get_config(self) -> dict:
         """Get config that exactly describes this model."""
         config = {
+            "timestamp": self.timestamp,
             "n_components": self.n_components,
             "init_params": self.init_params,
             "random_state": self.random_state,
@@ -104,6 +109,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             n_iter=config["n_iter"],
             tol=config["tol"],
             verbose=config["verbose"],
+            timestamp=config["timestamp"],
         )
         
         # assign parameters
