@@ -33,6 +33,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     
     @property
     def config(self) -> dict:
+        """Return simplified config."""
         return {
             "n_components": self.n_components,
             "init_params": self.init_params,
@@ -64,7 +65,8 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             implementation='scaling',
         )
     
-    def to_json(self) -> str:
+    def get_config(self) -> dict:
+        """Get config that exactly describes this model."""
         config = {
             "n_components": self.n_components,
             "init_params": self.init_params,
@@ -85,6 +87,9 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
         }
         if self.is_fitted:
             config["init_params"] = ""
+        return config
+    
+    def to_json(self, config: dict) -> str:
         return json.dumps(config)
 
     @staticmethod
@@ -424,3 +429,13 @@ def compare_models(
         X: np.ndarray,
     ):
     regimes_a = model_a.predict(X)
+
+
+# still need better config structure
+# when coming back from a crash
+# RegimeClassifier should not be dependant on it's constructor
+# instead it should just be initialized using a list of models
+# should each sub model be serialized, or should all submodels be serialized as being part of main model?
+
+
+# TODO: models should have a timestamp so they can be sorted
