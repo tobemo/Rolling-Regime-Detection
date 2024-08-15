@@ -31,6 +31,17 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     def transition_cost(self, cost: float) -> None:
         self._transition_cost = cost
     
+    @property
+    def config(self) -> dict:
+        return {
+            "n_components": self.n_components,
+            "init_params": self.init_params,
+            "random_state": self.random_state,
+            "n_iter": self.random_state,
+            "tol": self.tol,
+            "verbose": self.verbose,
+        }
+    
     def __init__(
             self,
             n_components=1,
@@ -110,20 +121,31 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 
 
 class RegimeClassifier():
-    # The HMM is completely determined by start probability vector Pi, transition probability matrix A, and emission probability theta
-    _model: MyVariationalGaussianHMM
-    models: list[MyVariationalGaussianHMM]
-    first_config: dict
-    config: dict
-
+    models: list[MyVariationalGaussianHMM] = []
+    """List of all trained models."""
     @property
     def model(self) -> MyVariationalGaussianHMM:
-        return self._model
+        """Last trained model."""
+        return self.models[-1]
     @model.setter
     def model(self, model) -> None:
+        """Store new model into model list."""
         self.models.append(model)
-        self._model = model
     
+    _first_config: dict
+    @property
+    def first_config(self) -> dict:
+        if len(self.models) > 0:
+            return self.models[0].config
+        else: return self._first_config
+    @first_config.setter
+    def first_config(self, config) -> None:
+        self._first_config = config
+    
+    @property
+    def config(self) -> dict:
+        return self.models[-1].config
+
     @property
     def transition_threshold(self) -> float:
         """2 deviations above the mean of past transition costs.
@@ -144,7 +166,7 @@ class RegimeClassifier():
         score = -np.inf
 
         for _ in range(k):
-            model_ = MyVariationalGaussianHMM(self.config)
+            model_ = MyVariationalGaussianHMM(self.first_config)
             model_.fit(X, lengths=lengths)
             score_ = model_.score(X)
             if score_ > score:
@@ -161,8 +183,9 @@ class RegimeClassifier():
         # get cost of both
         # check if model_n+1_t costs less than model_n_t,
         #  AND model_n_t is costlier than a certain threshold (indicating that for the current data at t it fails to effectively capture all regimes)
-
-        if not hasattr(self, '_model'):
+        
+        # call initial fit instead if no models exist
+        if len(self.models) == 0:
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
@@ -215,7 +238,6 @@ class RegimeClassifier():
             threshold=self.transition_threshold,
         ):
             cheapest_model = model_new_added_regime
-            self.config = config # update config
         
         # store cheapest model
         self.model = cheapest_model
@@ -229,28 +251,19 @@ class RegimeClassifier():
     def __init__(
             self,
             n_components=1,
-            algorithm="viterbi",
-            init_params='stmc',
-            random_state=None,
             n_iter=100,
             tol=1e-6,
+            random_state=None,
             verbose=False,
-            **kwargs,
         ):
-        config = dict(
-            n_components=n_components, 
-            algorithm=algorithm,
-            init_params=init_params,
-            random_state=random_state,
+        self.first_config = dict(
+            n_components=n_components,
+            init_params="stmc",
             n_iter=n_iter,
             tol=tol,
+            random_state=random_state,
             verbose=verbose,
-            **kwargs,
         )
-        self.first_config = deepcopy(config)
-        self.config = config
-
-        self.models = []
 
     @property
     def is_fitted(self) -> bool:
