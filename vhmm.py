@@ -86,12 +86,11 @@ class RegimeClassifier():
     def initial_fit(self, X, lengths=None, k: int = 10) -> None:
         """Train k models and keep best one.
         This is needed to account for gradient descent getting stuck in a local minima."""
-        model = self.init_model(**self.config)
-        model.fit(X, lengths=lengths)
-        score = model.score(X)
+        model = None
+        score = -np.inf
 
-        for _ in range(k-1):
-            model_ = self.init_model(**self.config)
+        for _ in range(k):
+            model_ = MyVariationalGaussianHMM.init_model(self.config)
             model_.fit(X, lengths=lengths)
             score_ = model_.score(X)
             if score_ > score:
