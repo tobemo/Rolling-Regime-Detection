@@ -2,11 +2,15 @@ import json
 import time
 from collections import deque
 from copy import deepcopy
+from logging import getLogger, Logger
 
 import numpy as np
 import pandas as pd
 from hmmlearn import vhmm
 from scipy import optimize, stats
+
+
+LOGGER = getLogger("RegimeClassification")
 
 
 class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
@@ -136,7 +140,14 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
 
 
 class RegimeClassifier():
-    models: list[MyVariationalGaussianHMM] = deque(maxlen=128)
+    name: str = 'root'
+    def __repr__(self) -> str:
+        return f"{self.name}({self.n_components})"
+    @property
+    def logger(self) -> Logger:
+        return LOGGER.getChild(self.name)
+    
+    models: deque[MyVariationalGaussianHMM] = deque(maxlen=128)
     """List of all trained models."""
     @property
     def model(self) -> MyVariationalGaussianHMM:
@@ -146,6 +157,7 @@ class RegimeClassifier():
     def model(self, model) -> None:
         """Store new model into model list."""
         self.models.append(model)
+        self.logger.info(f"Fitted {len(self.models)}/{self.models.maxlen} hmm.")
     
     _first_config: dict
     @property
@@ -161,6 +173,14 @@ class RegimeClassifier():
     @property
     def config(self) -> dict:
         return self.models[-1].config
+    
+    @property
+    def is_fitted(self) -> bool:
+        return self.model.is_fitted
+    
+    @property
+    def n_components(self) -> int:
+        return self.model.n_components
 
     @property
     def transition_threshold(self) -> float:
@@ -245,6 +265,13 @@ class RegimeClassifier():
         )
         model_new.transition_cost = transition_cost_current_regimes
         model_new_added_regime.transition_cost = transition_cost_added_regime
+
+        # logging
+        self.logger.debug(f"Cost as is: {transition_cost_current_regimes}")
+        self.logger.debug(
+            f"Cost with extra regime: {transition_cost_added_regime}"
+        )
+        self.logger.debug(f"Transition threshold: {self.transition_threshold}")
         
         # compare costs
         cheapest_model = model_new
@@ -254,7 +281,10 @@ class RegimeClassifier():
             threshold=self.transition_threshold,
         ):
             cheapest_model = model_new_added_regime
-        
+            self.logger.info(
+                f"Upped from {self.n_components} to {cheapest_model.n_components} regimes."
+            )
+                
         # store cheapest model
         self.model = cheapest_model
     
@@ -281,13 +311,6 @@ class RegimeClassifier():
             verbose=verbose,
         )
 
-    @property
-    def is_fitted(self) -> bool:
-        return self.model.is_fitted
-    
-    @property
-    def n_components(self) -> int:
-        return self.model.n_components
     
     @staticmethod
     def from_jsons(configs: list[str]):
