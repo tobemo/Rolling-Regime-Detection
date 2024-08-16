@@ -50,7 +50,7 @@ class MyHMM(ABC, _AbstractHMM):
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
-        ) -> None:
+        ) -> np.ndarray:
         predictions = super().predict(X, lengths=lengths)
         mapped_predictions = np.vectorize(
             lambda x: self.mapper[x] if x in self.mapper else x
@@ -61,7 +61,7 @@ class MyHMM(ABC, _AbstractHMM):
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
-        ) -> None:
+        ) -> np.ndarray:
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
         return probas[:, reordering]
