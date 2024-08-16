@@ -106,7 +106,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
         return config
     
     def to_json(self) -> str:
-        """Dict to json string."""
+        """Model to json string."""
         config = self.get_config()
         return json.dumps(config)
 
@@ -360,6 +360,10 @@ class RegimeClassifier():
                 MyVariationalGaussianHMM.from_json(config)
             )
         return rc
+    
+    def to_jsons(self) -> dict[int, str]:
+        """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
+        return {model.timestamp: model.to_json() for model in self.models}
 
 
 def copy_model(
