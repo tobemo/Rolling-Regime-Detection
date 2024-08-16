@@ -98,8 +98,12 @@ class RegimeClassifier():
         costs = [model.transition_cost for model in self.models]
         costs = np.array(costs)
         costs = costs[costs < np.inf]
-        if len(costs) < 8:
+        
+        if len(costs) == 0:
             return np.inf
+        if len(costs) < 8:
+            return 1.2 * costs.max()
+        
         mean = costs.mean()
         std = costs.std()
         return mean + self._deviation_mult * std
@@ -382,10 +386,3 @@ def new_regime_is_advised(
     )
     return cond
 
-
-def compare_models(
-        model_a: MyHMM,
-        model_b: MyHMM,
-        X: np.ndarray,
-    ):
-    regimes_a = model_a.predict(X)
