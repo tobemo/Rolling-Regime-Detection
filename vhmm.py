@@ -19,6 +19,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
     covariance_type: 'full'
     implementation: 'scaling'
     params: 'stmc'
+    algorithm: 'viterbi'
 
     # s: start probability
     # t: transition matrix
@@ -62,20 +63,25 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
         ) -> None:
         self.timestamp = timestamp or int(time.time())
         super().__init__(
-            n_components=n_components, 
             covariance_type="full",
             algorithm="viterbi",
+            params='stmc',
+            implementation='scaling',
+            n_components=n_components, 
             init_params=init_params,
             random_state=random_state,
             n_iter=n_iter,
             tol=tol,
             verbose=verbose,
-            params='stmc',
-            implementation='scaling',
         )
     
     def get_config(self) -> dict:
-        """Get config that exactly describes this model."""
+        """Get config that exactly describes this model.
+        This not only includes thins like creation time and number of components but also things like start probabilities.
+        
+        Can be used to initialize this class to an already fitted, and ready to use, model; when using MyVariationalGaussianHMM.from_config()
+        
+        This enables serialization and persistence."""
         config = {
             "timestamp": self.timestamp,
             "n_components": self.n_components,
@@ -99,16 +105,16 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
             config["init_params"] = ""
         return config
     
-    def to_json(self, config: dict) -> str:
+    def to_json(self) -> str:
+        """Dict to json string."""
+        config = self.get_config()
         return json.dumps(config)
 
     @staticmethod
-    def from_json(config: str):
-        config = json.loads(config)
-        return MyVariationalGaussianHMM.from_config(config)
-    
-    @staticmethod
     def from_config(config: dict):
+        """Initialize a MyVariationalGaussianHMM from a config.
+        
+        See `to_config()`"""
         model = MyVariationalGaussianHMM.__init__(
             n_components=config["n_components"],
             init_params=config["init_params"],
@@ -137,9 +143,29 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
         )
 
         return model
+    
+    @staticmethod
+    def from_json(config: str):
+        """Initialize a MyVariationalGaussianHMM from a json string."""
+        config = json.loads(config)
+        return MyVariationalGaussianHMM.from_config(config)
 
 
 class RegimeClassifier():
+    """A wrapper class that fits and keeps track of hidden Markov models over time. At each fitting it checks whether it makes sense to add one regime or not. This to try to capture the emerge of new regimes over time.
+    The label assignment of each new model is matched with the preceding model to ensure a continuous labeling. Otherwise there is no guarantee that model_t and model_t-1 will use the same label when talking about the same regime.
+
+    Inspired by "Robust rolling regime detection" by Hirsa et al.
+    
+    Operation:
+    At first 10 models are trained and the best one is kept.
+    From then on new models are transferred from this one. The previous transition matrix and starting probabilities are used to initialize a new model which then is fitted on the most recent up-to-date data. Data is treated as an expanding window, meaning that as more data comes available, new models are trained using all available data up to that point.
+
+    Some terminology:
+    transition cost: The distance between the distributions of the regimes at t_n and at t_n-1. Minimized to match labels from regimes_n-1 with those of regimes_n
+
+    At each new fit both a model with the same number of regimes as last time (K), as well as a model with 1 more regime (K+1), are fitted. The one with an extra regime, K+1, is used if it is both cheaper than K, and, the K one has a cost that exceeds a certain threshold (in this implementation μ+n*σ is used, see `transition_threshold`).
+    - """
     name: str = 'root'
     def __repr__(self) -> str:
         return f"{self.name}({self.n_components})"
@@ -162,6 +188,7 @@ class RegimeClassifier():
     _first_config: dict
     @property
     def first_config(self) -> dict:
+        """The very first config used."""
         if len(self.models) > 0:
             return self.models[0].config
         else:
@@ -172,6 +199,7 @@ class RegimeClassifier():
     
     @property
     def config(self) -> dict:
+        """The config of the latest model."""
         return self.models[-1].config
     
     @property
@@ -180,12 +208,37 @@ class RegimeClassifier():
     
     @property
     def n_components(self) -> int:
-        return self.model.n_components
+        return self.model.n_components 
+        
+    def __init__(
+            self,
+            n_components=1,
+            n_iter=100,
+            tol=1e-6,
+            random_state=None,
+            verbose=False,
+        ):
+        self.first_config = dict(
+            n_components=n_components,
+            init_params="stmc",
+            n_iter=n_iter,
+            tol=tol,
+            random_state=random_state,
+            verbose=verbose,
+        )
+    
+    _deviation_mult = 2
+    """How many deviations of the mean the transition cost needs to be before a new regime is added."""
 
     @property
     def transition_threshold(self) -> float:
-        """2 deviations above the mean of past transition costs.
-        Returns inf if not enough data is present."""
+        """A new regime should only be added when the transition cost the current amount of regimes exceeds this threshold.
+
+        Returns n deviations above the mean of past transition costs.
+        N depends on class attribute `_deviation_mult`.
+        
+        Returns inf if not enough data is present.
+        """
         costs = [model.transition_cost for model in self.models]
         costs = np.array(costs)
         costs = costs[costs < np.inf]
@@ -193,7 +246,7 @@ class RegimeClassifier():
             return np.inf
         mean = costs.mean()
         std = costs.std()
-        return mean + 2 * std
+        return mean + self._deviation_mult * std
 
     def initial_fit(self, X, lengths=None, k: int = 10) -> None:
         """Train k models and keep best one.
@@ -212,7 +265,7 @@ class RegimeClassifier():
         self.model = model
 
     def fit(self, X, lengths=None) -> None:
-        """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs is kept.
+        """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, from the previous regime classifier to now, is used.
         """
         # compare model_n_t to model_n_t-1
         # compare model_n+1_t to model_n_t-1
@@ -294,26 +347,9 @@ class RegimeClassifier():
     def predict_proba(self, X, lengths=None) -> None:
         self.model.predict_proba(X, lengths=lengths)
 
-    def __init__(
-            self,
-            n_components=1,
-            n_iter=100,
-            tol=1e-6,
-            random_state=None,
-            verbose=False,
-        ):
-        self.first_config = dict(
-            n_components=n_components,
-            init_params="stmc",
-            n_iter=n_iter,
-            tol=tol,
-            random_state=random_state,
-            verbose=verbose,
-        )
-
-    
     @staticmethod
     def from_jsons(configs: list[str]):
+        """Fill `self.models` with MyVariationalGaussianHMM initialized using a json string."""
         if len(configs) == 0:
             raise RuntimeError("Can't initialize 'RegimeClassifier' since configs is an empty list.")
         # assumes jsons are sorted
