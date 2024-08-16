@@ -1,4 +1,5 @@
 import json
+import time
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -20,6 +21,9 @@ class MyHMM:
 
     timestamp: int
     """Creation time."""
+    
+    def __init__(self, timestamp: int = None) -> None:
+        self.timestamp = timestamp or int(time.time())
 
     @property
     def config(self) -> dict:

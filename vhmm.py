@@ -1,14 +1,13 @@
 import json
 import os
-import time
 
 import numpy as np
-from hmmlearn import vhmm
+from hmmlearn.vhmm import VariationalGaussianHMM
 
 from base import MyHMM
 
 
-class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM, MyHMM):
+class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
     """VariationalGaussianHMM with some settings fixed:
     
     covariance_type: 'full'
@@ -31,8 +30,8 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM, MyHMM):
             verbose=False,
             timestamp: int = None,
         ) -> None:
-        self.timestamp = timestamp or int(time.time())
-        super().__init__(
+        VariationalGaussianHMM.__init__(
+            self,
             covariance_type="full",
             algorithm="viterbi",
             params='stmc',
@@ -44,6 +43,7 @@ class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM, MyHMM):
             tol=tol,
             verbose=verbose,
         )
+        MyHMM.__init__(self, timestamp=timestamp)
     
     def get_config(self) -> dict:
         config = {
