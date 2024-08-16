@@ -1,20 +1,11 @@
 import json
 import os
 import time
-from collections import deque
-from copy import deepcopy
-from logging import Logger, getLogger
 
 import numpy as np
-import pandas as pd
 from hmmlearn import vhmm
-from scipy import optimize, stats
 
 from base import MyHMM
-
-
-LOGGER = getLogger("RegimeClassification")
-N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
 
 
 class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM, MyHMM):
