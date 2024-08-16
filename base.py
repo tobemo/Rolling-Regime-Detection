@@ -28,7 +28,7 @@ class MyHMM(ABC, _AbstractHMM):
     """A 2D array where the first column corresponds to the from and the second column corresponds to the to."""
     @property
     def mapper(self) -> dict:
-        """A mapping dict where keys are the from and values are the too.
+        """A mapping dict where keys are the from and values are the to.
         """
         # turn 2 array into dict with first col being keys
         # and second col being values
@@ -52,10 +52,10 @@ class MyHMM(ABC, _AbstractHMM):
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         predictions = super().predict(X, lengths=lengths)
-        mapped_predictions = np.vectorize(
-            lambda x: self.mapper[x] if x in self.mapper else x
-        )(predictions)
-        return mapped_predictions
+        for key, value in self.mapper.items():
+            predictions[predictions == key] = -1 * value
+        predictions = predictions.abs()
+        return predictions
     
     def predict_proba(
             self,
