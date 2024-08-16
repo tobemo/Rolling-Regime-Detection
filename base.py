@@ -5,12 +5,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 
-class MyHMM:
+class MyHMM(ABC):
     @property
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
     
-    _transition_cost = np.inf
+    _transition_cost: float
     @property
     def transition_cost(self) -> float:
         """Transition cost from a unspecified model to this one. Assumes HMMs are use in a chain so the transition cost from the previous model to this one is known."""
@@ -24,6 +24,7 @@ class MyHMM:
     
     def __init__(self, timestamp: int = None) -> None:
         self.timestamp = timestamp or int(time.time())
+        self._transition_cost = np.inf
 
     @property
     def config(self) -> dict:

@@ -51,7 +51,7 @@ class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
             "n_components": self.n_components,
             "init_params": "" if self.is_fitted else self.init_params,
             "random_state": self.random_state,
-            "n_iter": self.random_state,
+            "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
             "covariance_type": self.covariance_type,

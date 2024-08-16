@@ -3,6 +3,7 @@ import os
 from collections import deque
 from copy import deepcopy
 from logging import Logger, getLogger
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -11,7 +12,6 @@ from scipy import optimize, stats
 from base import MyHMM
 
 
-LOGGER = getLogger("RegimeClassification")
 N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
 
 
@@ -35,9 +35,9 @@ class RegimeClassifier():
         return f"{self.name}({self.n_components})"
     @property
     def logger(self) -> Logger:
-        return LOGGER.getChild(self.name)
+        return self._logger.getChild(self.name)
     
-    models: deque[MyHMM] = deque(maxlen=N_REGIME_CLASSIFIERS)
+    models: deque[MyHMM]
     """List of all trained models."""
     @property
     def model(self) -> MyHMM:
@@ -82,6 +82,8 @@ class RegimeClassifier():
             random_state=None,
             verbose=False,
         ):
+        self._logger = getLogger(self.__class__.__name__)
+        self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self.first_config = dict(
             n_components=n_components,
             init_params="stmc",
@@ -112,7 +114,12 @@ class RegimeClassifier():
         std = costs.std()
         return mean + self._deviation_mult * std
 
-    def initial_fit(self, X, lengths=None, k: int = 10) -> None:
+    def initial_fit(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None,
+            k: int = 10
+        ) -> None:
         """Train k models and keep best one.
         This is needed to account for gradient descent getting stuck in a local minima."""
         model = None
@@ -128,7 +135,11 @@ class RegimeClassifier():
         
         self.model = model
 
-    def fit(self, X, lengths=None) -> None:
+    def fit(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> None:
         """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, from the previous regime classifier to now, is used.
         """
         # compare model_n_t to model_n_t-1
