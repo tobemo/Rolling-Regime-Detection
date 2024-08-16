@@ -206,10 +206,18 @@ class RegimeClassifier():
         # store cheapest model
         self.model = cheapest_model
     
-    def predict(self, X, lengths=None) -> None:
+    def predict(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> None:
         self.model.predict(X, lengths=lengths)
     
-    def predict_proba(self, X, lengths=None) -> None:
+    def predict_proba(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> None:
         self.model.predict_proba(X, lengths=lengths)
 
     @staticmethod

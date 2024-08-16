@@ -1,11 +1,13 @@
 import json
 import time
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import numpy as np
+from hmmlearn.base import _AbstractHMM
 
 
-class MyHMM(ABC):
+class MyHMM(ABC, _AbstractHMM):
     @property
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
@@ -21,10 +23,48 @@ class MyHMM(ABC):
 
     timestamp: int
     """Creation time."""
+
+    mapping: np.ndarray
+    """A 2D array where the first column corresponds to the from and the second column corresponds to the to."""
+    @property
+    def mapper(self) -> dict:
+        """A mapping dict where keys are the from and values are the too.
+        """
+        # turn 2 array into dict with first col being keys
+        # and second col being values
+        return dict(
+            zip(
+                self.mapping.T.tolist()
+            )
+        )
     
     def __init__(self, timestamp: int = None) -> None:
         self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
+        # mapping defaults to mapping to itself
+        self.mapping = np.repeat(
+            np.arange(self.n_components)[:,None], 2, axis=1
+        )
+    
+    def predict(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> None:
+        predictions = super().predict(X, lengths=lengths)
+        mapped_predictions = np.vectorize(
+            lambda x: self.mapper[x] if x in self.mapper else x
+        )(predictions)
+        return mapped_predictions
+    
+    def predict_proba(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> None:
+        probas = super().predict_proba(X, lengths=lengths)
+        reordering = self.mapping[:,1]
+        return probas[:, reordering]
 
     @property
     def config(self) -> dict:
