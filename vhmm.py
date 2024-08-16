@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 from hmmlearn import vhmm
 from scipy import optimize, stats
+import os
 
 
 LOGGER = getLogger("RegimeClassification")
+N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
 
 
 class MyVariationalGaussianHMM(vhmm.VariationalGaussianHMM):
@@ -173,7 +175,7 @@ class RegimeClassifier():
     def logger(self) -> Logger:
         return LOGGER.getChild(self.name)
     
-    models: deque[MyVariationalGaussianHMM] = deque(maxlen=128)
+    models: deque[MyVariationalGaussianHMM] = deque(maxlen=N_REGIME_CLASSIFIERS)
     """List of all trained models."""
     @property
     def model(self) -> MyVariationalGaussianHMM:
@@ -353,8 +355,8 @@ class RegimeClassifier():
         if len(configs) == 0:
             raise RuntimeError("Can't initialize 'RegimeClassifier' since configs is an empty list.")
         # assumes jsons are sorted
-        configs = configs[-128:]
         rc = object.__new__(RegimeClassifier)
+        configs = configs[-rc.models.maxlen:]
         for config in configs:
             rc.models.append(
                 MyVariationalGaussianHMM.from_json(config)
