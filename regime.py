@@ -50,16 +50,6 @@ class RegimeClassifier():
         self.logger.info(f"Fitted {len(self.models)}/{self.models.maxlen} hmm.")
     
     _first_config: dict
-    @property
-    def first_config(self) -> dict:
-        """The very first config used."""
-        if len(self.models) > 0:
-            return self.models[0].config
-        else:
-            return self._first_config
-    @first_config.setter
-    def first_config(self, config) -> None:
-        self._first_config = config
     
     @property
     def config(self) -> dict:
@@ -84,7 +74,7 @@ class RegimeClassifier():
         ):
         self._logger = getLogger(self.__class__.__name__)
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
-        self.first_config = dict(
+        self._first_config = dict(
             n_components=n_components,
             init_params="stmc",
             n_iter=n_iter,
@@ -126,7 +116,7 @@ class RegimeClassifier():
         score = -np.inf
 
         for _ in range(k):
-            model_ = MyHMM(self.first_config)
+            model_ = MyHMM(self._first_config)
             model_.fit(X, lengths=lengths)
             score_ = model_.score(X)
             if score_ > score:
