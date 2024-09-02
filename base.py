@@ -4,10 +4,9 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
-from hmmlearn.base import _AbstractHMM
 
 
-class MyHMM(ABC, _AbstractHMM):
+class MyHMM(ABC):
     @property
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
