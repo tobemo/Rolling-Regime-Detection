@@ -24,8 +24,20 @@ class MyHMM(ABC, _AbstractHMM):
     timestamp: int
     """Creation time."""
 
-    mapping: np.ndarray
-    """A 2D array where the first column corresponds to the from and the second column corresponds to the to."""
+    _mapping: np.ndarray
+    @property
+    def mapping(self) -> np.ndarray:
+        """A 2D array where the first column corresponds to the from and the second column corresponds to the to."""
+        return getattr(
+            self,
+            '_mapping',
+            np.repeat(
+                np.arange(self.n_components)[:,None], 2, axis=1
+            )
+        )
+    @mapping.setter
+    def mapping(self, m: np.ndarray) -> None:
+        self._mapping = m
     @property
     def mapper(self) -> dict:
         """A mapping dict where keys are the from and values are the to.
@@ -42,9 +54,6 @@ class MyHMM(ABC, _AbstractHMM):
         self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
         # mapping defaults to mapping to itself
-        self.mapping = np.repeat(
-            np.arange(self.n_components)[:,None], 2, axis=1
-        )
     
     def predict(
             self,
