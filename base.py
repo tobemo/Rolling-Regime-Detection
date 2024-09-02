@@ -51,6 +51,7 @@ class MyHMM(ABC, _AbstractHMM):
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
+        """Find most likely state sequence corresponding to ``X``. States are mapped using self.mapper."""
         predictions = super().predict(X, lengths=lengths)
         for key, value in self.mapper.items():
             predictions[predictions == key] = -1 * value
