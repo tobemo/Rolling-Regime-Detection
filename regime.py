@@ -50,6 +50,9 @@ class RegimeClassifier():
         self.models.append(model)
         self.logger.info(f"Fitted {len(self.models)}/{self.models.maxlen} hmm.")
     
+    def __getitem(self, i: int) -> MyHMM:
+        return self.models[i]
+    
     _first_config: dict
     @property
     def config(self) -> dict:
