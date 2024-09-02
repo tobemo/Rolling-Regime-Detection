@@ -20,6 +20,17 @@ class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
     # m: mean
     # c: covariance matrix
     """
+    @property
+    def means_(self):
+        """
+        Compat for _BaseGaussianHMM.  We return the mean of the
+        approximating distribution, which for us is just `means_posterior_`
+        """
+        return self.means_posterior_
+    @means_.setter
+    def means_(self, means) -> None:
+        self.means_posterior_ = means
+    
     def __init__(
             self,
             n_components=1,
@@ -59,11 +70,7 @@ class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
             "transmat": self.transmat_.tolist(),
             "means": self.means_.tolist(),
             "covars": self.covars_.tolist(),
-            "weights": self.weights_.tolist(),
-            "precisions_cholesky": self.precisions_cholesky_.tolist(),
-            "dirichlet_concentration_prior": self.dirichlet_concentration_prior_.tolist(),
-            "mean_precision_prior": self.mean_precision_prior_.tolist(),
-            "degrees_of_freedom_prior": self.degrees_of_freedom_prior_.tolist(),
+            "n_features": self.n_features,
         }
         return config
     
@@ -81,23 +88,13 @@ class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
             verbose=config["verbose"],
             timestamp=config["timestamp"],
         )
+        model.n_features = config["n_features"]
         
         # assign parameters
         model.startprob_ = np.array(config["startprob"])
         model.transmat_ = np.array(config["transmat"])
         model.means_ = np.array(config["means"])
         model.covars_ = np.array(config["covars"])
-        model.weights_ = np.array(config["weights"])
-        model.precisions_cholesky_ = np.array(config["precisions_cholesky"])
-        model.dirichlet_concentration_prior_ = np.array(
-            config["dirichlet_concentration_prior"]
-        )
-        model.mean_precision_prior_ = np.array(
-            config["mean_precision_prior"]
-        )
-        model.degrees_of_freedom_prior_ = np.array(
-            config["degrees_of_freedom_prior"]
-        )
 
         return model
 
