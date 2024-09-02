@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from scipy import optimize, stats
+from sklearn.metrics import silhouette_score
 
 from base import MyHMM
 
@@ -50,7 +51,6 @@ class RegimeClassifier():
         self.logger.info(f"Fitted {len(self.models)}/{self.models.maxlen} hmm.")
     
     _first_config: dict
-    
     @property
     def config(self) -> dict:
         """The config of the latest model."""
@@ -63,15 +63,19 @@ class RegimeClassifier():
     @property
     def n_components(self) -> int:
         return self.model.n_components 
+    
+    _deviation_mult = 2
+    """How many deviations of the mean the transition cost needs to be before a new regime is added."""
         
     def __init__(
             self,
-            n_components=1,
+            n_components=-1,
             n_iter=100,
             tol=1e-6,
             random_state=None,
             verbose=False,
         ):
+        """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
         self._logger = getLogger(self.__class__.__name__)
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self._first_config = dict(
@@ -83,9 +87,6 @@ class RegimeClassifier():
             verbose=verbose,
         )
     
-    _deviation_mult = 2
-    """How many deviations of the mean the transition cost needs to be before a new regime is added."""
-
     @property
     def transition_threshold(self) -> float:
         """A new regime should only be added when the transition cost the current amount of regimes exceeds this threshold.
@@ -115,19 +116,39 @@ class RegimeClassifier():
             k: int = 10
         ) -> None:
         """Train k models and keep best one.
-        This is needed to account for gradient descent getting stuck in a local minima."""
-        model = None
-        score = -np.inf
+        This is needed to account for gradient descent getting stuck in a local minima.
+        If n_components in _first_config is -1 the best regime is auto-detected. Only the regimes 2-9 are considered."""
+        regimes = self._first_config['n_components']
+        if regimes == -1:
+            regimes = [2, 3, 4, 5, 6, 7, 8, 9]
+        else:
+            regimes = [regimes]
 
-        for _ in range(k):
-            model_ = MyHMM(self._first_config)
-            model_.fit(X, lengths=lengths)
-            score_ = model_.score(X)
-            if score_ > score:
-                model = model_
-                score = score_
+        best_model = None
+        best_silhouette_score = -1
+        for regime in regimes:
+            # first find the best initialization for the current regime
+            best_sub_model = None
+            best_log_likelihood = -np.inf
+            for _ in range(k):
+                this_model = MyHMM(self._first_config)
+                this_model.fit(X, lengths=lengths)
+                this_log_likelihood = this_model.score(X)
+                if this_log_likelihood > best_log_likelihood:
+                    best_sub_model = this_model
+                    best_log_likelihood = this_log_likelihood
+            
+            # then only keep the best model of all regimes by computing 
+            # the silhouette score for the best model in this regime
+            this_silhouette_score = silhouette_score(
+                X,
+                best_sub_model.predict(X, lengths=lengths)
+            )
+            if this_silhouette_score > best_silhouette_score:
+                best_model = best_sub_model
+                best_silhouette_score = this_silhouette_score
         
-        self.model = model
+        self.model = best_model
 
     def fit(
             self,
@@ -150,59 +171,69 @@ class RegimeClassifier():
         model_previous = self.model
 
         # model 2: transfer learn with same number of regimes as previous
-        model_new = copy_model(
+        new_model = copy_model(
             old_model=self.model,
             config=self.config,
         )
-        model_new.fit(X, lengths=lengths)
+        new_model.fit(X, lengths=lengths)
 
         # model 3: transfer learn but add one extra regime
         config = deepcopy(self.config)
         config['n_components'] += 1
-        model_new_added_regime = copy_model_and_add_regimes(
+        new_model_with_added_regime = copy_model_and_add_regimes(
             old_model=model_previous,
             config=config,
         )
-        model_new_added_regime.fit(X, lengths=lengths)
+        new_model_with_added_regime.fit(X, lengths=lengths)
 
         # regimes for all three models
         regimes_previous = model_previous.predict(X)
-        regimes_new = model_new.predict(X)
-        regimes_new_added_regime = model_new_added_regime.predict(X)
+        regimes_new = new_model.predict(X)
+        regimes_new_added_regime = new_model_with_added_regime.predict(X)
 
         # transition costs for both new models
-        transition_cost_current_regimes = get_transition_cost_matrix(
+        transition_cost_matrix_current_regimes = get_transition_cost_matrix(
             old_regimes=regimes_previous,
             new_regimes=regimes_new,
             n_old_regimes=model_previous.n_components,
-            n_new_regimes=model_new.n_components,
+            n_new_regimes=new_model.n_components,
             data=X,
         )
-        transition_cost_added_regime = get_transition_cost_matrix(
+        transition_cost_matrix_added_regime = get_transition_cost_matrix(
             old_regimes=regimes_previous,
             new_regimes=regimes_new_added_regime,
             n_old_regimes=model_previous.n_components,
-            n_new_regimes=model_new_added_regime.n_components,
+            n_new_regimes=new_model_with_added_regime.n_components,
             data=X,
         )
-        model_new.transition_cost = transition_cost_current_regimes
-        model_new_added_regime.transition_cost = transition_cost_added_regime
+        new_model.transition_cost = calculate_total_cost(
+            transition_cost_matrix_current_regimes
+        )
+        new_model_with_added_regime.transition_cost = calculate_total_cost(
+            transition_cost_matrix_added_regime
+        )
+        new_model.mapping = match_regimes(
+            transition_cost_matrix_current_regimes
+        )
+        new_model_with_added_regime.mapping = match_regimes(
+            transition_cost_matrix_added_regime
+        )
 
         # logging
-        self.logger.debug(f"Cost as is: {transition_cost_current_regimes}")
+        self.logger.debug(f"Cost as is: {new_model.transition_cost}")
         self.logger.debug(
-            f"Cost with extra regime: {transition_cost_added_regime}"
+            f"Cost with extra regime: {new_model_with_added_regime.transition_cost}"
         )
         self.logger.debug(f"Transition threshold: {self.transition_threshold}")
         
         # compare costs
-        cheapest_model = model_new
+        cheapest_model = new_model
         if new_regime_is_advised(
-            new_regime_cost=transition_cost_added_regime,
-            old_regime_cost=transition_cost_current_regimes,
+            new_regime_cost=transition_cost_matrix_added_regime,
+            old_regime_cost=transition_cost_matrix_current_regimes,
             threshold=self.transition_threshold,
         ):
-            cheapest_model = model_new_added_regime
+            cheapest_model = new_model_with_added_regime
             self.logger.info(
                 f"Upped from {self.n_components} to {cheapest_model.n_components} regimes."
             )
@@ -214,14 +245,16 @@ class RegimeClassifier():
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
-        ) -> None:
+        ) -> np.ndarray:
+        """Find most likely state sequence corresponding to X of the last trained model."""
         self.model.predict(X, lengths=lengths)
     
     def predict_proba(
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
-        ) -> None:
+        ) -> np.ndarray:
+        """Compute the posterior probability for each state of the last trained model."""
         self.model.predict_proba(X, lengths=lengths)
 
     @staticmethod
@@ -247,10 +280,11 @@ def copy_model(
         old_model: MyHMM,
         config: dict,
         ) -> MyHMM:
+    """Return a new model of the same type as old model with its transition matrix and start probabilities copied over."""
     config['init_params'] = 'mc'
     new_model = MyHMM(config)
     new_model.transmat_ = old_model.transmat_
-    new_model.covars_ = old_model.covars_
+    new_model.startprob_ = old_model.startprob_
     return new_model
 
 
@@ -258,7 +292,7 @@ def copy_model_and_add_regimes(
         old_model: MyHMM,
         config: dict,
         ) -> MyHMM:
-    """The difference between n_components in dict and in old_model determines how many regimes are added."""
+    """Same as `copy_model` but one or more regimes are added. The difference between n_components in dict and in old_model determines how many regimes are added."""
     n_components = old_model.n_components
     old_startprob = old_model.startprob_
     old_transmat = old_model.transmat_
@@ -320,7 +354,7 @@ def get_transition_cost_matrix(
         data: pd.Series,
         fill_value: float = 0.
     ) -> pd.DataFrame:
-    """Returns normalized cost matrix.
+    """Returns cost matrix.
     The cost matrix describes the distance between each old and new distribution."""
     I = n_old_regimes
     J = n_new_regimes
@@ -345,13 +379,16 @@ def get_transition_cost_matrix(
     return costs
 
 
-def match_regimes(transition_cost_matrix: np.ndarray) -> tuple:
-    return optimize.linear_sum_assignment(transition_cost_matrix)
+def match_regimes(transition_cost_matrix: np.ndarray) -> np.ndarray:
+    """Find the best match of old to new regimes."""
+    idx = optimize.linear_sum_assignment(transition_cost_matrix)
+    return np.stack(idx).T
 
 
 def calculate_total_cost(transition_cost_matrix: pd.DataFrame) -> float:
+    """Find the best match of old to new regimes and calculate the total cost."""
     transition_cost_matrix = transition_cost_matrix.to_numpy()
-    row_ind, col_ind = match_regimes(transition_cost_matrix)
+    row_ind, col_ind = match_regimes(transition_cost_matrix).T
     total_cost = transition_cost_matrix[row_ind, col_ind].sum()
     normalized_cost = total_cost / len(row_ind)  # Normalize by the number of old regimes
     return normalized_cost
@@ -361,6 +398,7 @@ def new_regime_costs_less(
         old_regime_cost: float,
         new_regime_cost: float,
     ) -> bool:
+    """c0 > c1"""
     return old_regime_cost > new_regime_cost
 
 
@@ -368,6 +406,7 @@ def old_regime_is_too_costly(
         old_regime_cost: float,
         threshold: float,
     ) -> bool:
+    """c0 > c-, with c- being a threshold"""
     return old_regime_cost > threshold
 
 
@@ -376,6 +415,7 @@ def new_regime_is_advised(
         new_regime_cost: float,
         threshold: float,
     ) -> bool:
+    """Both c0 > c1 and c0 > c-"""
     cond = new_regime_costs_less(
         old_regime_cost=old_regime_cost,
         new_regime_cost=new_regime_cost
