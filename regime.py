@@ -31,6 +31,28 @@ class RegimeClassifier():
 
     At each new fit both a model with the same number of regimes as last time (K), as well as a model with 1 more regime (K+1), are fitted. The one with an extra regime, K+1, is used if it is both cheaper than K, and, the K one has a cost that exceeds a certain threshold (in this implementation μ+n*σ is used, see `transition_threshold`).
     - """
+    def __init__(
+            self,
+            n_components=-1,
+            n_iter=100,
+            tol=1e-6,
+            random_state=None,
+            verbose=False,
+            name: str = None
+        ):
+        """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
+        self.name = 'root' or name
+        self._logger = getLogger(self.__class__.__name__)
+        self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
+        self._first_config = dict(
+            n_components=n_components,
+            init_params="stmc",
+            n_iter=n_iter,
+            tol=tol,
+            random_state=random_state,
+            verbose=verbose,
+        )
+    
     def __repr__(self) -> str:
         return f"{self.name}({self.n_components})"
     @property
@@ -68,27 +90,6 @@ class RegimeClassifier():
     
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
-        
-    def __init__(
-            self,
-            n_components=-1,
-            n_iter=100,
-            tol=1e-6,
-            random_state=None,
-            verbose=False,
-        ):
-        """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
-        self.name = 'root'
-        self._logger = getLogger(self.__class__.__name__)
-        self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
-        self._first_config = dict(
-            n_components=n_components,
-            init_params="stmc",
-            n_iter=n_iter,
-            tol=tol,
-            random_state=random_state,
-            verbose=verbose,
-        )
     
     @property
     def transition_threshold(self) -> float:
@@ -271,21 +272,40 @@ class RegimeClassifier():
         """Compute the posterior probability for each state of the last trained model."""
         self.model.predict_proba(X, lengths=lengths)
 
-    @staticmethod
-    def from_jsons(configs: list[str]):
+    @classmethod
+    def from_jsons(cls, meta_config: str, configs: list[str]):
         """Fill `self.models` with MyVariationalGaussianHMM initialized using a json string."""
         if len(configs) == 0:
-            raise RuntimeError("Can't initialize 'RegimeClassifier' since configs is an empty list.")
-        # assumes jsons are sorted
-        rc = object.__new__(RegimeClassifier)
-        configs = configs[-rc.models.maxlen:]
-        for config in configs:
-            rc.models.append(
-                MyHMM.from_json(config)
+            raise RuntimeError(
+                "Can't initialize 'RegimeClassifier' since configs is an empty list."
             )
-        return rc
+        
+        # create regime classifier object
+        meta_config = json.loads(meta_config)
+        regime_classifier = cls(**meta_config)
+
+        # load models and sort by timestamp
+        configs = configs[-regime_classifier.models.maxlen:]
+        models = [MyHMM.from_json(cfg) for cfg in configs]
+        models.sort(key=lambda m: m.timestamp)
+
+        # add to regime classifier
+        for model in models:
+            regime_classifier.models.append(model)
+        
+        return regime_classifier
     
-    def to_jsons(self) -> dict[int, str]:
+    def to_json(self) -> tuple[str, dict[int, str]]:
+        """Returns a dict of initial kwargs for this class and all the jsons that describe the models currently being tracked.
+        
+        See `classifier_to_json` and `models_to_jsons`."""
+        return self.classifier_to_json(), self.models_to_jsons()
+    
+    def classifier_to_json(self) -> str:
+        """Returns initial kwargs, used to initialize this RegimeClassifier object, as json string."""
+        return json.load(self._first_config)
+    
+    def models_to_jsons(self) -> dict[int, str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
         return {model.timestamp: model.to_json() for model in self.models}
 
