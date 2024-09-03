@@ -15,7 +15,7 @@ class MyHMM(ABC):
     @property
     def transition_cost(self) -> float:
         """Transition cost from a unspecified model to this one. Assumes HMMs are use in a chain so the transition cost from the previous model to this one is known."""
-        return  self._transition_cost
+        return self._transition_cost
     @transition_cost.setter
     def transition_cost(self, cost: float) -> None:
         self._transition_cost = cost
@@ -26,7 +26,7 @@ class MyHMM(ABC):
     _mapping: np.ndarray
     @property
     def mapping(self) -> np.ndarray:
-        """A 2D array where the first column corresponds to the from and the second column corresponds to the to."""
+        """A 2D array where the first column corresponds to the from and the second column corresponds to the to. Should be of shape (n_components, 2)."""
         return getattr(
             self,
             '_mapping',
@@ -36,6 +36,7 @@ class MyHMM(ABC):
         )
     @mapping.setter
     def mapping(self, m: np.ndarray) -> None:
+        assert m.shape == (self.n_components, 2)
         self._mapping = m
     @property
     def mapper(self) -> dict:
