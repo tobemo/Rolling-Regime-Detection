@@ -134,3 +134,18 @@ def test_setting_of_mapping(trained_model):
         ]
     ).T
     trained_model.mapping = map
+
+
+def test_mapper(trained_model):
+    map = np.stack(
+        [
+            [0, 1, 2, 3],
+            [1, 2, 3, 0]
+        ]
+    ).T
+    trained_model.mapping = map
+
+    mapper = trained_model.mapper
+    assert np.array(list(mapper.keys())) == pytest.approx(map[:,0])
+    assert np.array(list(mapper.values())) == pytest.approx(map[:,1])
+

@@ -65,7 +65,7 @@ class MyHMM(ABC):
         # and second col being values
         return dict(
             zip(
-                self.mapping.T.tolist()
+                *self.mapping.T.tolist()
             )
         )
     
