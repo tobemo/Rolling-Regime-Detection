@@ -70,9 +70,9 @@ class MyHMM(ABC):
         )
     
     def __init__(self, timestamp: int = None) -> None:
+        super().__init__()
         self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
-        # mapping defaults to mapping to itself
     
     def predict(
             self,
@@ -80,10 +80,11 @@ class MyHMM(ABC):
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to ``X``. States are mapped using self.mapper."""
+        # FIXME: not being called
         predictions = super().predict(X, lengths=lengths)
         for key, value in self.mapper.items():
             predictions[predictions == key] = -1 * value
-        predictions = predictions.abs()
+        predictions = np.abs(predictions)
         return predictions
     
     def predict_proba(
