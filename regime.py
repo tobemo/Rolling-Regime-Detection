@@ -52,9 +52,11 @@ class RegimeClassifier():
             random_state=random_state,
             verbose=verbose,
         )
+        self._n_components = n_components
     
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.n_components})"
+        return f"{self.__class__.__name__}(n_components={self.n_components})"
+    
     @property
     def logger(self) -> Logger:
         return self._logger.getChild(self.name)
@@ -64,14 +66,18 @@ class RegimeClassifier():
     @property
     def model(self) -> MyHMM:
         """Last trained model."""
+        if not self.has_models:
+            raise AttributeError("RegimeClassifier currently tracks 0 models.")
         return self.models[-1]
     @model.setter
     def model(self, model) -> None:
         """Store new model into model list."""
         self.models.append(model)
-        self.logger.info(f"Fitted {len(self.models)}/{self.models.maxlen} hmm.")
+        self.logger.info(
+            f"Tracking {len(self.models)}/{self.models.maxlen} HMM's."
+        )
     
-    def __getitem(self, i: int) -> MyHMM:
+    def __getitem__(self, i: int) -> MyHMM:
         return self.models[i]
     
     _first_config: dict
@@ -81,12 +87,20 @@ class RegimeClassifier():
         return self.models[-1].config
     
     @property
+    def has_models(self) -> bool:
+        return len(self.models) > 0
+    
+    @property
     def is_fitted(self) -> bool:
-        return self.model.is_fitted
+        if self.has_models:
+            return self.model.is_fitted
+        return False
     
     @property
     def n_components(self) -> int:
-        return self.model.n_components
+        if self.has_models:
+            return self.model.n_components
+        return self._n_components
     
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
