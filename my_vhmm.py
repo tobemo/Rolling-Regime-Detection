@@ -25,7 +25,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
         return self.means_posterior_
     @means_.setter
     def means_(self, means) -> None:
-        # monkey patch make means settable
+        # monkey patch to make mean settable
         self.means_posterior_ = means
     
     def __init__(
@@ -52,12 +52,6 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             tol=tol,
             verbose=verbose,
         )
-    
-    def _check(self) -> None:
-        # Don't call check on fitted models.
-        # Loading from config breaks `_check` because not all attributed needed for fitting are set.
-        if not self.is_fitted:
-            super()._check()
     
     def get_config(self) -> dict:
         config = {
