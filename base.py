@@ -6,6 +6,25 @@ from typing import Optional
 import numpy as np
 
 
+def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
+    if mapping.shape != (n_components, 2):
+        raise ValueError(
+            f"Mapping should be of shape {(n_components, 2)}, but is of shape {mapping.shape}"
+        )
+    wrong_mapping = not np.array_equal(
+        np.sort(mapping[:,0]),
+        np.arange(n_components)
+    )
+    wrong_mapping |= not np.array_equal(
+        np.sort(mapping[:,1]),
+        np.arange(n_components)
+    )
+    if wrong_mapping:
+        raise ValueError(
+            f"Wrong values in mapping, expected elements of {np.arange(n_components)} in both 1st and 2nd column, but got {mapping}."
+        )
+
+
 class MyHMM(ABC):
     @property
     def is_fitted(self) -> bool:
@@ -36,7 +55,7 @@ class MyHMM(ABC):
         )
     @mapping.setter
     def mapping(self, m: np.ndarray) -> None:
-        assert m.shape == (self.n_components, 2)
+        _validate_mapping(m, self.n_components)
         self._mapping = m
     @property
     def mapper(self) -> dict:

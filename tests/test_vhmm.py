@@ -17,7 +17,7 @@ X = np.array([
 @pytest.fixture
 def trained_model() -> MyVariationalGaussianHMM:
     # earthquake data from http://earthquake.usgs.gov/
-    obj = MyVariationalGaussianHMM(n_components=4)
+    obj = MyVariationalGaussianHMM(n_components=4, n_iter=10)
     obj.fit(X[:, None])
     return obj
 
@@ -85,3 +85,52 @@ def test_from_json(trained_model):
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
     assert y1 == pytest.approx(y0)
+
+
+def test_transition_cost(trained_model):
+    assert trained_model.transition_cost == np.inf
+    trained_model.transition_cost = 3.
+    trained_model.transition_cost
+
+
+def test_setting_of_mapping(trained_model):
+    # default map is just an arange
+    current_map = trained_model.mapping
+    map = np.stack(
+        [
+            [0, 1, 2, 3],
+            [0, 1, 2, 3]
+        ]
+    ).T
+    assert map == pytest.approx(current_map)
+
+    # wrong shape
+    map = np.stack(
+        [
+            [0, 1, 2, 3],
+            [0, 1, 2, 3]
+        ]
+    )
+    with pytest.raises(ValueError):
+        trained_model.mapping = map
+    # right shape
+    map = map.T
+    trained_model.mapping = map
+
+    # wrong values
+    map = np.stack(
+        [
+            [0, 1, 2, 3],
+            [1, 2, 3, 4]
+        ]
+    ).T
+    with pytest.raises(ValueError):
+        trained_model.mapping = map
+    # right values
+    map = np.stack(
+        [
+            [0, 1, 2, 3],
+            [1, 2, 3, 0]
+        ]
+    ).T
+    trained_model.mapping = map
