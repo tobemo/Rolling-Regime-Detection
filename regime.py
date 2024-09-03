@@ -54,7 +54,7 @@ class RegimeClassifier():
         )
     
     def __repr__(self) -> str:
-        return f"{self.name}({self.n_components})"
+        return f"{self.__class__.__name__}({self.n_components})"
     @property
     def logger(self) -> Logger:
         return self._logger.getChild(self.name)
@@ -86,7 +86,7 @@ class RegimeClassifier():
     
     @property
     def n_components(self) -> int:
-        return self.model.n_components 
+        return self.model.n_components
     
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
