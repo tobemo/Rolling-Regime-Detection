@@ -40,7 +40,9 @@ class RegimeClassifier():
             verbose: bool = False,
             name: str = None
         ):
-        """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
+        """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`.
+        If n_components is a list of int then the best number of regimes from that list is detected.
+        If n_components is an int >0 then that number of regimes is used."""
         self.name = 'root' or name
         self._logger = getLogger(self.__class__.__name__)
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
@@ -142,7 +144,7 @@ class RegimeClassifier():
         regimes = self._first_config['n_components']
         if regimes == -1:
             regimes = [2, 3, 4, 5, 6, 7, 8, 9]
-        else:
+        elif isinstance(regimes, int):
             regimes = [regimes]
 
         best_model = None
