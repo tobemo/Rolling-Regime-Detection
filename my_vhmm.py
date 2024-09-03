@@ -22,13 +22,10 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     """
     @property
     def means_(self):
-        """
-        Compat for _BaseGaussianHMM.  We return the mean of the
-        approximating distribution, which for us is just `means_posterior_`
-        """
         return self.means_posterior_
     @means_.setter
     def means_(self, means) -> None:
+        # monkey patch make means settable
         self.means_posterior_ = means
     
     def __init__(
@@ -59,9 +56,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     def _check(self) -> None:
         # Don't call check on fitted models.
         # Loading from config breaks `_check` because not all attributed needed for fitting are set.
-        if self.is_fitted:
-            pass
-        else:
+        if not self.is_fitted:
             super()._check()
     
     def get_config(self) -> dict:
