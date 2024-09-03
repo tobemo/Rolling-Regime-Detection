@@ -2,6 +2,7 @@ from my_vhmm import MyVariationalGaussianHMM
 import pytest
 import numpy as np
 
+
 X = np.array([
     13, 14, 8, 10, 16, 26, 32, 27, 18, 32, 36, 24, 22, 23, 22, 18,
     25, 21, 21, 14, 8, 11, 14, 23, 18, 17, 19, 20, 22, 19, 13, 26,
@@ -68,7 +69,19 @@ def test_loading_config_prediction_equality(trained_model):
     cfg = trained_model.get_config()
     obj2 = MyVariationalGaussianHMM.from_config(cfg)
 
-    cfg2 = obj2.get_config()
+    y0 = trained_model.predict(X[:, None])
+    y1 = obj2.predict(X[:, None])
+    assert y1 == pytest.approx(y0)
+
+
+def test_to_json(trained_model):
+    string = trained_model.to_json()
+
+
+def test_from_json(trained_model):
+    string = trained_model.to_json()
+    obj2 = MyVariationalGaussianHMM.from_json(string)
+
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
     assert y1 == pytest.approx(y0)
