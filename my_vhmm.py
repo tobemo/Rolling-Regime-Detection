@@ -41,6 +41,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             verbose=False,
             timestamp: int = None,
         ) -> None:
+        MyHMM.__init__(self, timestamp=timestamp)
         VariationalGaussianHMM.__init__(
             self,
             covariance_type="full",
@@ -54,7 +55,6 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             tol=tol,
             verbose=verbose,
         )
-        MyHMM.__init__(self, timestamp=timestamp)
     
     def _check(self) -> None:
         # Don't call check on fitted models.
