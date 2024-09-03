@@ -31,7 +31,6 @@ class RegimeClassifier():
 
     At each new fit both a model with the same number of regimes as last time (K), as well as a model with 1 more regime (K+1), are fitted. The one with an extra regime, K+1, is used if it is both cheaper than K, and, the K one has a cost that exceeds a certain threshold (in this implementation μ+n*σ is used, see `transition_threshold`).
     - """
-    name: str = 'root'
     def __repr__(self) -> str:
         return f"{self.name}({self.n_components})"
     @property
@@ -79,6 +78,7 @@ class RegimeClassifier():
             verbose=False,
         ):
         """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
+        self.name = 'root'
         self._logger = getLogger(self.__class__.__name__)
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self._first_config = dict(
