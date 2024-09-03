@@ -149,3 +149,25 @@ def test_mapper(trained_model):
     assert np.array(list(mapper.keys())) == pytest.approx(map[:,0])
     assert np.array(list(mapper.values())) == pytest.approx(map[:,1])
 
+
+def test_mapped_predictions():
+    model = MyVariationalGaussianHMM(n_components=4)
+    model.n_features = 1
+    model.startprob_ = np.array([0.4, 0.3, 0.3])
+    model.transmat_ = np.array([[0.1, 0.7, 0.2],
+                                [0.2, 0.1, 0.7],
+                                [0.7, 0.2, 0.1]])
+    model.means_ = np.array([[0.0, 0.0], [3.0, -3.0], [5.0, 10.0]])
+    model.covars_ = 0.5 *  np.tile(np.identity(2), (3, 1, 1))
+
+    X, y0 = model.sample(20)
+
+    y0 = model.predict(X)
+    model.mapping = np.stack(
+        [
+            [0, 1, 2, 3],
+            [1, 2, 3, 0]
+        ]
+    ).T
+    y1 = model.predict(X)
+    assert not y1 == pytest.approx(y0)
