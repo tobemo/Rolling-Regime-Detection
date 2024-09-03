@@ -7,7 +7,7 @@ from hmmlearn.vhmm import VariationalGaussianHMM
 from base import MyHMM
 
 
-class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
+class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     """VariationalGaussianHMM with some settings fixed:
     
     covariance_type: 'full'
