@@ -92,9 +92,9 @@ class RegimeClassifier():
     
     @property
     def transition_threshold(self) -> float:
-        """A new regime should only be added when the transition cost the current amount of regimes exceeds this threshold.
+        """A new regime should only be added when the transition cost exceeds this threshold.
 
-        Returns n deviations above the mean of past transition costs.
+        Returns n deviations above the mean of past transition costs, as stored as an attribute of each HMM in self.models.
         N depends on class attribute `_deviation_mult`.
         
         Returns inf if not enough data is present.
@@ -119,8 +119,11 @@ class RegimeClassifier():
             k: int = 10
         ) -> None:
         """Train k models and keep best one.
-        This is needed to account for gradient descent getting stuck in a local minima.
-        If n_components in _first_config is -1 the best regime is auto-detected. Only the regimes 2-9 are considered."""
+        This is needed to account for gradient descent getting stuck in a local minima. 
+
+        This model will then be the starting point for all future fits.
+        
+        If n_components in _first_config is -1 the best regime is auto-detected. Only 2-9 are considered for n_components."""
         regimes = self._first_config['n_components']
         if regimes == -1:
             regimes = [2, 3, 4, 5, 6, 7, 8, 9]
@@ -158,15 +161,18 @@ class RegimeClassifier():
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> None:
-        """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, from the previous regime classifier to now, is used.
+        """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, compared to the previous regime classifier, is used.
+
+        This way a chronological chain of models emerges, each transferred from the previous, with the origin being whatever model was deemed best in `initial_fit`.
         """
         # compare model_n_t to model_n_t-1
         # compare model_n+1_t to model_n_t-1
+        # with n the number of regimes and t the time point
         # get cost of both
         # check if model_n+1_t costs less than model_n_t,
         #  AND model_n_t is costlier than a certain threshold (indicating that for the current data at t it fails to effectively capture all regimes)
         
-        # call initial fit instead if no models exist
+        # call initial fit if no models exist
         if len(self.models) == 0:
             return self.initial_fit(X, lengths=lengths)
         
@@ -189,7 +195,7 @@ class RegimeClassifier():
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
-        # regimes for all three models
+        # regimes for all three models on all known data
         regimes_previous = model_previous.predict(X)
         regimes_new = new_model.predict(X)
         regimes_new_added_regime = new_model_with_added_regime.predict(X)
@@ -209,12 +215,17 @@ class RegimeClassifier():
             n_new_regimes=new_model_with_added_regime.n_components,
             data=X,
         )
+
+        # store costs in model objects themselves
         new_model.transition_cost = calculate_total_cost(
             transition_cost_matrix_current_regimes
         )
         new_model_with_added_regime.transition_cost = calculate_total_cost(
             transition_cost_matrix_added_regime
         )
+
+        # store mapping from previous to current regime 
+        # in model objects themselves
         new_model.mapping = match_regimes(
             transition_cost_matrix_current_regimes
         )
