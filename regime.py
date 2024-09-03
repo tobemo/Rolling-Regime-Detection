@@ -79,9 +79,11 @@ class RegimeClassifier():
         )
     
     def __getitem__(self, i: int) -> MyHMM:
+        """Directly access a tracked model."""
         return self.models[i]
     
     _first_config: dict
+    """Config used to create RegimeClassifier object."""
     @property
     def config(self) -> dict:
         """The config of the latest model."""
@@ -93,12 +95,14 @@ class RegimeClassifier():
     
     @property
     def is_fitted(self) -> bool:
+        """Last model is fitted."""
         if self.has_models:
             return self.model.is_fitted
         return False
     
     @property
     def n_components(self) -> int:
+        """Number of components of last model."""
         if self.has_models:
             return self.model.n_components
         return self._n_components
