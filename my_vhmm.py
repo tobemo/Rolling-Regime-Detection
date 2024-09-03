@@ -56,6 +56,14 @@ class MyVariationalGaussianHMM(VariationalGaussianHMM, MyHMM):
         )
         MyHMM.__init__(self, timestamp=timestamp)
     
+    def _check(self) -> None:
+        # Don't call check on fitted models.
+        # Loading from config breaks `_check` because not all attributed needed for fitting are set.
+        if self.is_fitted:
+            pass
+        else:
+            super()._check()
+    
     def get_config(self) -> dict:
         config = {
             "timestamp": self.timestamp,
