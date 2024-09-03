@@ -44,7 +44,6 @@ class RegimeClassifier():
         If n_components is a list of int then the best number of regimes from that list is detected.
         If n_components is an int >0 then that number of regimes is used."""
         self.name = 'root' or name
-        self._logger = getLogger(self.__class__.__name__)
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self._first_config = dict(
             n_components=n_components,
@@ -61,7 +60,7 @@ class RegimeClassifier():
     
     @property
     def logger(self) -> Logger:
-        return self._logger.getChild(self.name)
+        return getLogger(self.__class__.__name__).getChild(self.name)
     
     models: deque[MyHMM]
     """List of all trained models."""
