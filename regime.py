@@ -33,11 +33,11 @@ class RegimeClassifier():
     - """
     def __init__(
             self,
-            n_components=-1,
-            n_iter=100,
-            tol=1e-6,
-            random_state=None,
-            verbose=False,
+            n_components: int | list[int] = -1,
+            n_iter: int =100,
+            tol: float =1e-6,
+            random_state: float = None,
+            verbose: bool = False,
             name: str = None
         ):
         """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`."""
