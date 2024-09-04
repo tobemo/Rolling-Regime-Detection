@@ -355,9 +355,9 @@ def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
     """
     old_shape = startprob.shape[0]
     new_startprob = np.zeros(old_shape + extension)
-    new_startprob[:-old_shape] = startprob
+    new_startprob[:old_shape] = startprob
     # the new start probability is set to the smallest one already present
-    new_startprob[-old_shape:] = startprob.min()
+    new_startprob[old_shape:] = startprob.min(keepdims=True)
     # normalize to sum to 1
     new_startprob /= new_startprob.sum()
     return new_startprob
