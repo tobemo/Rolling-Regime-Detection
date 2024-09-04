@@ -159,7 +159,7 @@ class RegimeClassifier():
             best_sub_model = None
             best_log_likelihood = -np.inf
             for _ in range(k):
-                this_model = MyHMM(self._first_config)
+                this_model = MyHMM(**self._first_config)
                 this_model.fit(X, lengths=lengths)
                 this_log_likelihood = this_model.score(X)
                 if this_log_likelihood > best_log_likelihood:
@@ -337,7 +337,7 @@ def copy_model(
         ) -> MyHMM:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over."""
     config['init_params'] = 'mc'
-    new_model = MyHMM(config)
+    new_model = type(old_model).from_config(config)
     new_model.transmat_ = old_model.transmat_
     new_model.startprob_ = old_model.startprob_
     return new_model
@@ -356,7 +356,7 @@ def copy_model_and_add_regimes(
 
     # only estimate mean and covariance before fit
     config['init_params'] = 'mc'
-    new_model = MyHMM(config)
+    new_model = type(old_model).from_config(config)
     
     # regimes to add
     n = config['n_components'] - n_components
