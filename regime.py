@@ -347,8 +347,9 @@ def copy_model(
         config: dict,
         ) -> MyHMM:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over."""
+
     config['init_params'] = 'mc'
-    new_model = type(old_model).from_config(config)
+    new_model = type(old_model)(**config)
     new_model.transmat_ = old_model.transmat_
     new_model.startprob_ = old_model.startprob_
     return new_model
@@ -362,12 +363,12 @@ def copy_model_and_add_regimes(
     n_components = old_model.n_components
     old_startprob = old_model.startprob_
     old_transmat = old_model.transmat_
-    old_means = old_model.means_
-    old_covars = old_model.covars_
+    # old_means = old_model.means_
+    # old_covars = old_model.covars_
 
     # only estimate mean and covariance before fit
     config['init_params'] = 'mc'
-    new_model = type(old_model).from_config(config)
+    new_model = type(old_model)(**config)
     
     # regimes to add
     n = config['n_components'] - n_components
