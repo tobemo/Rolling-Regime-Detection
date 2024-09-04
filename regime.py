@@ -182,6 +182,8 @@ class RegimeClassifier():
                 best_model = best_sub_model
                 best_silhouette_score = this_silhouette_score
         
+        if not best_model:
+            raise RuntimeError('Failed to fit even one working model.')
         self.model = best_model
 
     def fit(
