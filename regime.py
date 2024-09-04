@@ -222,7 +222,7 @@ class RegimeClassifier():
         # model 3: transfer learn but add one extra regime
         config = deepcopy(self.init_config)
         config['n_components'] += 1
-        new_model_with_added_regime = copy_model_and_add_regimes(
+        new_model_with_added_regime = copy_model(
             old_model=model_previous,
             config=config,
         )
@@ -342,66 +342,72 @@ class RegimeClassifier():
         return {model.timestamp: model.to_json() for model in self.models}
 
 
+
+def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
+    """Extend start probability matrix.
+    New probabilities are set to the smallest value already present.
+
+    Args:
+        old_startprob (np.ndarray): Old start probabilities.
+        extension (int): How many probabilities to add.
+
+    Returns:
+        np.ndarray: Extended start probability vector.
+    """
+    old_shape = startprob.shape[0]
+    new_startprob = np.zeros(old_shape + extension)
+    new_startprob[:-old_shape] = startprob
+    # the new start probability is set to the smallest one already present
+    new_startprob[-old_shape:] = startprob.min()
+    # normalize to sum to 1
+    new_startprob /= new_startprob.sum()
+    return new_startprob
+
+
+def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
+    old_shape = transmat.shape[0]
+    new_transmat = np.zeros(
+        (old_shape + extension, old_shape + extension)
+    )
+    new_transmat[:old_shape, :old_shape] = transmat
+    new_transmat[-extension:, :] = 1
+    # the new transition probability is set to the smallest one already present
+    new_transmat[:, -extension:] = transmat.min(axis=1)
+    # normalize to sum to 1
+    new_transmat /= new_transmat.sum(axis=1, keepdims=True)
+    return new_transmat
+
+
 def copy_model(
         old_model: MyHMM,
         config: dict,
         ) -> MyHMM:
-    """Return a new model of the same type as old model with its transition matrix and start probabilities copied over."""
-
-    config['init_params'] = 'mc'
-    new_model = type(old_model)(**config)
-    new_model.transmat_ = old_model.transmat_
-    new_model.startprob_ = old_model.startprob_
-    return new_model
-
-
-def copy_model_and_add_regimes(
-        old_model: MyHMM,
-        config: dict,
-        ) -> MyHMM:
-    """Same as `copy_model` but one or more regimes are added. The difference between n_components in dict and in old_model determines how many regimes are added."""
-    n_components = old_model.n_components
-    old_startprob = old_model.startprob_
-    old_transmat = old_model.transmat_
-    # old_means = old_model.means_
-    # old_covars = old_model.covars_
-
-    # only estimate mean and covariance before fit
-    config['init_params'] = 'mc'
-    new_model = type(old_model)(**config)
+    """Return a new model of the same type as old model with its transition matrix and start probabilities copied over.
+    If `n_component in config` is greater than `old_model.n_component` then one or more regimes are added."""
     
-    # regimes to add
-    n = config['n_components'] - n_components
+    n_components = config['n_components']
+    n_component_difference = config['n_components'] - old_model.n_components
+    if n_component_difference < 0:
+        raise NotImplementedError("A reduction in the number of regimes is not supported.")
+    
+    config['init_params'] = 'mc'
+    new_model = type(old_model)(**config)
 
-    # the new start probability is set to the smallest one already present
-    new_startprob = np.zeros(n_components + n)
-    new_startprob[:-n] = old_startprob
-    new_startprob[-n:] = old_startprob.min()
-    new_startprob /= new_startprob.sum()
-    new_model.startprob_ = new_startprob
+    startprob_ = old_model.startprob_
+    transmat_ = old_model.transmat_
 
-    # for a new regime the transitions are set to be equally probable to transition to any other existing regime
-    # for existing regimes to switch to the new ones, it is assumed that this is as unlikely as the least likely transition already present
-    new_transmat = np.zeros(
-        (n_components + n, n_components + n)
-    )
-    new_transmat[:n_components, :n_components] = old_transmat
-    new_transmat[-n:, :] = 1 
-    new_transmat[:, -n:] = old_transmat.min(axis=1)
-    new_transmat /= new_transmat.sum(axis=1, keepdims=True)
-    new_model.transmat_ = new_transmat
-
-    # # the mean(s) of the new hidden state are initialized to 0
-    # new_means = np.zeros((n_components + n, *old_means.shape[1:]))
-    # new_means[:-n] = self.means_
-    # new_means[-n:] = 0
-    # new_model.means_ = new_means
-
-    # new_covars = np.zeros((n_components + n, *old_covars.shape[1:]))
-    # new_covars[:-n, :, :] = old_covars
-    # new_covars[-n, :, :] = np.eye(old_covars.shape[-1]) + self.min_covar
-    # new_model.covars_ = new_covars
-
+    if n_component_difference > 0:
+        startprob_ = extend_startprob(
+            startprob=startprob_,
+            extension=n_component_difference,
+        )
+        transmat_ = extend_transmat(
+            transmat=transmat_,
+            extension=n_component_difference,
+        )
+    
+    new_model.startprob_ = startprob_
+    new_model.transmat_ = transmat_
     return new_model
 
 
