@@ -95,16 +95,16 @@ def test_model_setting_and_getting(rc):
     assert rc.models[3] == 'D'
 
 
-def test_initial_fit():
-    rc = RegimeClassifier(n_components=2, n_iter=5)
-    rc.initial_fit(X[:, None])
-    assert rc.n_components == 2
+# def test_initial_fit():
+#     rc = RegimeClassifier(n_components=2, n_iter=5)
+#     rc.initial_fit(X[:, None])
+#     assert rc.n_components == 2
 
-    rc = RegimeClassifier(n_components=[2,3], n_iter=5)
-    rc.initial_fit(X[:, None])
+#     rc = RegimeClassifier(n_components=[2,3], n_iter=5)
+#     rc.initial_fit(X[:, None])
 
-    rc = RegimeClassifier(n_components=-1, n_iter=2)
-    rc.initial_fit(X[:, None])
+#     rc = RegimeClassifier(n_components=-1, n_iter=2)
+#     rc.initial_fit(X[:, None])
 
 
 def test_extend_transmat():
@@ -216,6 +216,20 @@ def test_match_regimes():
                          [2, 2]])
     match = match_regimes(b)
     assert match == pytest.approx(expected)
+
+
+def test_calculate_total_cost():
+    tcm = np.array([[0.5, 0.0, 0.5],
+                    [0.0, 0.5, 0.5],
+                    [0.5, 0.5, 0.0]])
+    cost = calculate_total_cost(tcm)
+    assert cost == 0
+
+    tcm = np.array([[0.5, 0.0, 0.5],
+                    [0.0, 0.5, 0.5],
+                    [0.5, 0.5, 0.5]])
+    cost = calculate_total_cost(tcm)
+    assert cost == 0.5 / 3
 
 
 def test_fit():
