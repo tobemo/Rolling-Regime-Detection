@@ -103,7 +103,7 @@ class MyHMM(ABC):
             "n_components": self.n_components,
             "init_params": self.init_params,
             "random_state": self.random_state,
-            "n_iter": self.random_state,
+            "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
             "timestamp": self.timestamp
