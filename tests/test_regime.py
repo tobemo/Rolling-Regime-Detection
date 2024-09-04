@@ -1,5 +1,5 @@
 import numpy as np
-from regime import RegimeClassifier, extend_startprob, extend_transmat
+from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix
 from my_vhmm import MyVariationalGaussianHMM
 import pytest
 
@@ -134,8 +134,74 @@ def test_extend_startprob():
     assert extended == pytest.approx(expected)
 
 
+def test_transition_cost_matrix():
+    size = 10
+    high = 2
+    data = np.random.rand(size)
+    old_regimes = np.random.randint(low=0, high=high, size=size)
+    new_regimes = old_regimes.copy()
+
+    # old regimes < new regimes
+    with pytest.raises(ValueError):
+        get_transition_cost_matrix(
+            old_regimes=old_regimes,
+            new_regimes=new_regimes,
+            n_old_regimes=high+1,
+            n_new_regimes=high,
+            data=data,
+        )
+    # old regimes == new regimes
+    get_transition_cost_matrix(
+        old_regimes=old_regimes,
+        new_regimes=new_regimes,
+        n_old_regimes=high,
+        n_new_regimes=high,
+        data=data,
+    )
+    # old regimes > new regimes
+    get_transition_cost_matrix(
+        old_regimes=old_regimes,
+        new_regimes=new_regimes,
+        n_old_regimes=high,
+        n_new_regimes=high+5,
+        data=data,
+    )
+
+    # squareness
+    tcm = get_transition_cost_matrix(
+        old_regimes=old_regimes,
+        new_regimes=new_regimes,
+        n_old_regimes=high,
+        n_new_regimes=high+1,
+        data=data,
+    )
+    assert tcm.shape[0] == tcm.shape[1]
+    
+    # fill value
+    tcm = get_transition_cost_matrix(
+        old_regimes=old_regimes,
+        new_regimes=new_regimes,
+        n_old_regimes=high,
+        n_new_regimes=high+1,
+        data=data,
+    )
+    assert tcm[-1] == pytest.approx(np.zeros(high+1))
+
+    # correctness of the diagonal
+    # when regimes are equal
+    tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
+    assert np.diag(tcm) == pytest.approx(np.zeros(high))
+
+    data = np.ones(size)
+    old_regimes = np.random.randint(low=0, high=2, size=size)
+    new_regimes = old_regimes.copy()
+    data[old_regimes == 1] = 2
+    tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
+    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(high))
+
+
 def test_fit():
     rc = RegimeClassifier(n_components=2, n_iter=5)
-    rc.initial_fit(X[:50, None])
-
+    rc.fit(X[:50, None])
     rc.fit(X[:, None])
+
