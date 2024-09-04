@@ -66,3 +66,32 @@ def test_properties_with_trained_model(rc_populated):
     assert rc_populated.transition_threshold == 1.2 * 3
 
 
+def test_model_setting_and_getting(rc):
+    with pytest.raises(AttributeError):
+        rc.model
+    with pytest.raises(IndexError):
+        rc.models[-1]
+    with pytest.raises(IndexError):
+        rc[-1]
+
+    rc.model = 'A'
+    rc.model = 'B'
+    rc.model = 'C'
+    rc.model = 'D'
+    assert rc.has_models
+
+    assert rc.model == 'D'
+    assert rc.models[-1] == 'D'
+    assert rc[-1] == 'D'
+
+    assert rc[0] == 'A'
+    assert rc[1] == 'B'
+    assert rc[2] == 'C'
+    assert rc[3] == 'D'
+    
+    assert rc.models[0] == 'A'
+    assert rc.models[1] == 'B'
+    assert rc.models[2] == 'C'
+    assert rc.models[3] == 'D'
+
+
