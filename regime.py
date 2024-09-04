@@ -87,7 +87,9 @@ class RegimeClassifier():
     @property
     def config(self) -> dict:
         """The config of the latest model."""
-        return self.models[-1].config
+        if self.has_models:
+           return self.models[-1].config
+        return self._first_config
     
     @property
     def has_models(self) -> bool:
