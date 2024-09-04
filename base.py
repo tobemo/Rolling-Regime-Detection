@@ -97,7 +97,7 @@ class MyHMM(ABC):
         return probas[:, reordering]
 
     @property
-    def config(self) -> dict:
+    def init_config(self) -> dict:
         """Returns creation config."""
         return {
             "n_components": self.n_components,
