@@ -205,7 +205,7 @@ class RegimeClassifier():
         #  AND model_n_t is costlier than a certain threshold (indicating that for the current data at t it fails to effectively capture all regimes)
         
         # call initial fit if no models exist
-        if len(self.models) == 0:
+        if not self.has_models:
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
@@ -465,31 +465,42 @@ def get_transition_cost_matrix(
         new_regimes: np.ndarray,
         n_old_regimes: int,
         n_new_regimes: int,
-        data: pd.Series,
+        data: np.ndarray,
         fill_value: float = 0.
-    ) -> pd.DataFrame:
+    ) -> np.ndarray:
     """Returns cost matrix.
-    The cost matrix describes the distance between each old and new distribution."""
-    I = n_old_regimes
-    J = n_new_regimes
-    if J < I:
-        raise ValueError(f"J is expected to be ge than I but is {J} < {I}.")
+    The cost matrix describes the distance between each old and new distribution. The cost is defined as the distance between the distributions of the data first index by an old regime and then index by a new regime.
+    E.g. `data[old regime 0] <> data[new regime 0], data[old regime 0] <> data[new regime 1], ..` The cost of each old-new pair is computed and returned.
 
-    costs = {}
-    for i in range(I):
-        for j in range(J):
-            u = data[old_regimes == i]
-            v = data[new_regimes == j]
+    Args:
+        old_regimes (np.ndarray): Array of int denoting old regimes.
+        new_regimes (np.ndarray): Array of int denoting new regimes.
+        n_old_regimes (int): The number of old regimes. Can be higher than the highest value of `old_regimes`.
+        n_new_regimes (int): The number of new regimes. Can be higher than the highest value of `new_regimes`.
+        data (np.ndarray): Data from which regimes are derived.
+        fill_value (float, optional): Value to assign as cost for when `n_new_regimes > n_old_regimes`. In this case no comparison can be made for those extra regimes, in which case this fill value is used. Defaults to 0.
+
+    Raises:
+        ValueError: `n_new_regimes` shouldn't be lower then `n_old_regimes`.
+
+    Returns:
+        np.ndarray: Cost matrix. Rows denote the old regimes, columns the new. A row-column pair then denotes the cost of labeling the new regime the same value as the old one.
+    """
+    n_old = n_old_regimes
+    n_new = n_new_regimes
+    if n_new < n_old:
+        raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new} < {n_old}.")
+
+    # ensure squareness
+    costs = np.full((n_new, n_new), fill_value=fill_value)
+    for o in range(n_old):
+        for n in range(n_new):
+            u = data[old_regimes == o]
+            v = data[new_regimes == n]
             if len(u) == 0 or len(v) == 0:
-                costs[(i,j)] = np.inf
+                costs[o,n] = np.inf
             else:
-                costs[(i,j)] = get_distance(u, v)
-    
-    costs = pd.Series(costs)
-    costs.index.names = ['old/I', 'new/J']
-    costs = costs.unstack(level=-1)
-    if J > I:
-        costs = costs.reindex(np.arange(J), fill_value=fill_value) # ensure squareness
+                costs[o,n] = get_distance(u, v)
     return costs
 
 
@@ -499,9 +510,8 @@ def match_regimes(transition_cost_matrix: np.ndarray) -> np.ndarray:
     return np.stack(idx).T
 
 
-def calculate_total_cost(transition_cost_matrix: pd.DataFrame) -> float:
+def calculate_total_cost(transition_cost_matrix: np.ndarray) -> float:
     """Find the best match of old to new regimes and calculate the total cost."""
-    transition_cost_matrix = transition_cost_matrix.to_numpy()
     row_ind, col_ind = match_regimes(transition_cost_matrix).T
     total_cost = transition_cost_matrix[row_ind, col_ind].sum()
     normalized_cost = total_cost / len(row_ind)  # Normalize by the number of old regimes
