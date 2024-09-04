@@ -374,14 +374,44 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
     Returns:
         np.ndarray: Extended transition probability matrix.
     """
+    ## transition matrix:
+    # rows are the current state
+    # columns are the next state
+    # each row shows the probability to go from that state 
+    # to any of the other states, including itself (the diagonal)
+    # [0.7, 0.2, 0.1]   # transitions from state 0
+    # [0.3, 0.5, 0.2]   # transitions from state 1
+    # [0.4, 0.1, 0.5]   # transitions from state 2
+    # 70% to go from S0 to S0, 20% for S0 to S1, 10% for S0 to S3
+
+    ## extending transition matrix:
+    # going from new regime(s) to any existing regime has an equal probability
+    # [0.7, 0.2, 0.1]
+    # [0.3, 0.5, 0.2]
+    # [0.4, 0.1, 0.5]
+    # [1.0, 1.0, 1.0]   < new regime
+    # going from existing regimes A to new regime(s) B^ is set to the smallest 
+    # transition probability from A to any of the old regimes B
+    #                  v new regime
+    # [0.7, 0.2, 0.1, 0.1]
+    # [0.3, 0.5, 0.2, 0.2]
+    # [0.4, 0.1, 0.5, 0.1]
+    # combined:
+    # [0.7, 0.2, 0.1, 0.1]
+    # [0.3, 0.5, 0.2, 0.2]
+    # [0.4, 0.1, 0.5, 0.1]
+    # [1.0, 1.0, 1.0, 1.0]
+    # note that afterwards each row is normalized to sum to 1
+
     old_shape = transmat.shape[0]
     new_transmat = np.zeros(
         (old_shape + extension, old_shape + extension)
     )
     new_transmat[:old_shape, :old_shape] = transmat
+    # going from new regime(s) to any existing regime has an equal probability
     new_transmat[-extension:, :] = 1
-    # the new transition probability is set to the smallest one already present
-    new_transmat[:, -extension:] = transmat.min(axis=1)
+    # going from existing regimes A to new regime(s) B^ is set to the smallest transition probability from A to any of the old regimes B
+    new_transmat[:-extension, -extension:] = transmat.min(axis=1, keepdims=True)
     # normalize to sum to 1
     new_transmat /= new_transmat.sum(axis=1, keepdims=True)
     return new_transmat
