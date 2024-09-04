@@ -1,7 +1,6 @@
 import json
 import os
 from collections import deque
-from copy import deepcopy
 from logging import Logger, getLogger
 from typing import Optional
 
@@ -160,7 +159,7 @@ class RegimeClassifier():
             # for the current number of regimes
             best_sub_model = None
             best_log_likelihood = -np.inf
-            cfg = deepcopy(self._init_config)
+            cfg = self._init_config
             cfg['n_components'] = regime
             for _ in range(k):
                 this_model = MyVariationalGaussianHMM(**cfg)
@@ -220,7 +219,7 @@ class RegimeClassifier():
         new_model.fit(X, lengths=lengths)
 
         # model 3: transfer learn but add one extra regime
-        config = deepcopy(self.init_config)
+        config = self.init_config
         config['n_components'] += 1
         new_model_with_added_regime = copy_model(
             old_model=model_previous,
