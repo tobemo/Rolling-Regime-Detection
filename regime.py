@@ -156,7 +156,8 @@ class RegimeClassifier():
         best_model = None
         best_silhouette_score = -1
         for regime in regimes:
-            # first find the best initialization for the current regime
+            # first find the best initialization 
+            # for the current number of regimes
             best_sub_model = None
             best_log_likelihood = -np.inf
             cfg = deepcopy(self._first_config)
@@ -172,16 +173,18 @@ class RegimeClassifier():
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
             y = best_sub_model.predict(X, lengths=lengths)
-            this_silhouette_score = -1
-            if len(np.unique(y)) > 1:
-                this_silhouette_score = silhouette_score(
-                    X,
-                    best_sub_model.predict(X, lengths=lengths)
-                )
+            if len(np.unique(y)) < 2:
+                continue
+            this_silhouette_score = silhouette_score(
+                X,
+                best_sub_model.predict(X, lengths=lengths)
+            )
             if this_silhouette_score > best_silhouette_score:
                 best_model = best_sub_model
                 best_silhouette_score = this_silhouette_score
         
+        # ensure a decent model has actually been fitted
+        # failure is each model consistently only detecting one regime
         if not best_model:
             raise RuntimeError('Failed to fit even one working model.')
         self.model = best_model
