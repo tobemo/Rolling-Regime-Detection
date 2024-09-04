@@ -11,6 +11,7 @@ from scipy import optimize, stats
 from sklearn.metrics import silhouette_score
 
 from base import MyHMM
+from my_vhmm import MyVariationalGaussianHMM
 
 
 N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
@@ -159,7 +160,7 @@ class RegimeClassifier():
             best_sub_model = None
             best_log_likelihood = -np.inf
             for _ in range(k):
-                this_model = MyHMM(**self._first_config)
+                this_model = MyVariationalGaussianHMM(**self._first_config)
                 this_model.fit(X, lengths=lengths)
                 this_log_likelihood = this_model.score(X)
                 if this_log_likelihood > best_log_likelihood:
@@ -307,7 +308,7 @@ class RegimeClassifier():
 
         # load models and sort by timestamp
         configs = configs[-regime_classifier.models.maxlen:]
-        models = [MyHMM.from_json(cfg) for cfg in configs]
+        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
         models.sort(key=lambda m: m.timestamp)
 
         # add to regime classifier
