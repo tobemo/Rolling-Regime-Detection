@@ -1,5 +1,5 @@
 import numpy as np
-from regime import RegimeClassifier
+from regime import RegimeClassifier, extend_startprob, extend_transmat
 from my_vhmm import MyVariationalGaussianHMM
 import pytest
 
@@ -105,6 +105,33 @@ def test_initial_fit():
 
     rc = RegimeClassifier(n_components=-1, n_iter=2)
     rc.initial_fit(X[:, None])
+
+
+def test_extend_transmat():
+    transmat = np.array([[0.3, 0.4, 0.3, 0.0],
+                         [0.1, 0.2, 0.7, 0.0],
+                         [0.5, 0.2, 0.3, 0.0],
+                         [0.2, 0.2, 0.6, 0.0]])
+    # last col should be min of each row
+    # last row should be all equal
+    # each row should sum to 1
+    expected = np.array([[0.3, 0.4, 0.3, 0.0, 0.0],
+                         [0.1, 0.2, 0.7, 0.0, 0.0],
+                         [0.5, 0.2, 0.3, 0.0, 0.0],
+                         [0.2, 0.2, 0.6, 0.0, 0.0],
+                         [0.2, 0.2, 0.2, 0.2, 0.2]])
+    extended = extend_transmat(transmat, 1)
+    assert extended == pytest.approx(expected)
+
+
+def test_extend_startprob():
+    startprob = np.array([0.1, 0.4, 0.3, 0.2])
+    # new regime has startprob equal to smallest one
+    # already present
+    expected =  np.array([0.1, 0.4, 0.3, 0.2, 0.1])
+    expected /= expected.sum()
+    extended = extend_startprob(startprob, 1)
+    assert extended == pytest.approx(expected)
 
 
 def test_fit():
