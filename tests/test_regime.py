@@ -1,5 +1,5 @@
 import numpy as np
-from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix
+from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, match_regimes, calculate_total_cost
 from my_vhmm import MyVariationalGaussianHMM
 import pytest
 
@@ -198,6 +198,24 @@ def test_transition_cost_matrix():
     data[old_regimes == 1] = 2
     tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
     assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(high))
+
+
+def test_match_regimes():
+    a = np.array([[0., 1],
+                 [1, 0.]])
+    expected = np.array([[0, 0],
+                         [1, 1]])
+    match = match_regimes(a)
+    assert match == pytest.approx(expected)
+
+    b = np.array([[0.5, 0.0, 0.5],
+                  [0.0, 0.5, 0.5],
+                  [0.5, 0.5, 0.5]])
+    expected = np.array([[0, 1],
+                         [1, 0],
+                         [2, 2]])
+    match = match_regimes(b)
+    assert match == pytest.approx(expected)
 
 
 def test_fit():
