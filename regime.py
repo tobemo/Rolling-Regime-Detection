@@ -347,7 +347,7 @@ def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
     New probabilities are set to the smallest value already present.
 
     Args:
-        old_startprob (np.ndarray): Old start probabilities.
+        startprob (np.ndarray): Old start probabilities.
         extension (int): How many probabilities to add.
 
     Returns:
@@ -364,6 +364,16 @@ def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
 
 
 def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
+    """Extend transition probability matrix.
+    New probabilities are set to the smallest value already present.
+
+    Args:
+        transmat (np.ndarray): Old transition probabilities.
+        extension (int): How many probabilities to add.
+
+    Returns:
+        np.ndarray: Extended transition probability matrix.
+    """
     old_shape = transmat.shape[0]
     new_transmat = np.zeros(
         (old_shape + extension, old_shape + extension)
