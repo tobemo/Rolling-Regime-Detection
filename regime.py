@@ -161,7 +161,8 @@ class RegimeClassifier():
             best_log_likelihood = -np.inf
             cfg = self._init_config
             cfg['n_components'] = regime
-            for _ in range(k):
+            for s in range(k):
+                cfg['random_state'] = s
                 this_model = MyVariationalGaussianHMM(**cfg)
                 this_model.fit(X, lengths=lengths)
                 this_log_likelihood = this_model.score(X)
