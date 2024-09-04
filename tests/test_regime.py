@@ -37,7 +37,7 @@ def test_properties_with_no_models(rc):
     with pytest.raises(AttributeError):
         rc.model
     
-    assert isinstance(rc.config, dict)
+    assert isinstance(rc.init_config, dict)
     assert not rc.has_models
     assert not rc.is_fitted
     assert rc.n_components == 3
@@ -46,7 +46,7 @@ def test_properties_with_no_models(rc):
 
 def test_properties_with_untrained_model(rc_populated):
     rc_populated.model
-    assert isinstance(rc_populated.config, dict)
+    assert isinstance(rc_populated.init_config, dict)
 
     assert rc_populated.has_models
     assert not rc_populated.is_fitted
@@ -58,7 +58,7 @@ def test_properties_with_untrained_model(rc_populated):
 def test_properties_with_trained_model(rc_populated):
     rc_populated.model.fit(X[:, None])
     rc_populated.model.transition_cost = 3
-    assert isinstance(rc_populated.config, dict)
+    assert isinstance(rc_populated.init_config, dict)
 
     assert rc_populated.has_models
     assert rc_populated.is_fitted
@@ -107,3 +107,8 @@ def test_initial_fit():
     rc.initial_fit(X[:, None])
 
 
+def test_fit():
+    rc = RegimeClassifier(n_components=2, n_iter=5)
+    rc.initial_fit(X[:50, None])
+
+    rc.fit(X[:, None])

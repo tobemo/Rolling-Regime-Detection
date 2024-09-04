@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 
+# earthquake data from http://earthquake.usgs.gov/
 X = np.array([
     13, 14, 8, 10, 16, 26, 32, 27, 18, 32, 36, 24, 22, 23, 22, 18,
     25, 21, 21, 14, 8, 11, 14, 23, 18, 17, 19, 20, 22, 19, 13, 26,
@@ -16,7 +17,6 @@ X = np.array([
 
 @pytest.fixture
 def trained_model() -> MyVariationalGaussianHMM:
-    # earthquake data from http://earthquake.usgs.gov/
     obj = MyVariationalGaussianHMM(n_components=4, n_iter=10)
     obj.fit(X[:, None])
     return obj
