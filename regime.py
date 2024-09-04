@@ -169,10 +169,14 @@ class RegimeClassifier():
             
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
-            this_silhouette_score = silhouette_score(
-                X,
-                best_sub_model.predict(X, lengths=lengths)
-            )
+            # FIXME: brakes if only 1 regime is returned
+            y = best_sub_model.predict(X, lengths=lengths)
+            this_silhouette_score = -1
+            if len(np.unique(y)) > 1:
+                this_silhouette_score = silhouette_score(
+                    X,
+                    best_sub_model.predict(X, lengths=lengths)
+                )
             if this_silhouette_score > best_silhouette_score:
                 best_model = best_sub_model
                 best_silhouette_score = this_silhouette_score
