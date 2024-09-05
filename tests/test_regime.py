@@ -287,6 +287,40 @@ def test_fit():
     rc.fit(X[:, None])
 
 
-def test_json(rc_fitted):
+def test_equality(rc_fitted, rc):
+    assert rc_fitted == rc_fitted
+    assert not rc_fitted == rc
+
+
+def test_json(rc, rc_fitted):
     string = rc_fitted.classifier_to_json()
     assert rc_fitted.classifier_config == json.loads(string)
+
+    models = rc_fitted.models_to_jsons()
+    assert isinstance(models, list)
+
+    # unpopulated
+    classifier_config, configs = rc.to_json()
+    rc2 = RegimeClassifier.from_jsons(classifier_config, configs)
+    assert rc2 == rc
+
+    # populated
+    classifier_config, configs = rc_fitted.to_json()
+    rc2 = RegimeClassifier.from_jsons(classifier_config, configs)
+    assert rc2 == rc_fitted
+
+    # when n_components was init as a list
+    # with no previous models
+    rc = RegimeClassifier(n_components=[2,3])
+    classifier_config, configs = rc.to_json()
+    rc2 = RegimeClassifier.from_jsons(classifier_config, configs)
+    assert rc2 == rc
+    
+    # when n_components was init as a list
+    # with previous models
+    rc = RegimeClassifier(n_components=[2,3])
+    for _ in range(3):
+        rc.fit(X[:, None])
+    classifier_config, configs = rc.to_json()
+    rc2 = RegimeClassifier.from_jsons(classifier_config, configs)
+    assert rc2 == rc
