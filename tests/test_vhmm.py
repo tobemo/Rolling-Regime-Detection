@@ -171,3 +171,7 @@ def test_mapped_predictions():
     ).T
     y1 = model.predict(X)
     assert not y1 == pytest.approx(y0)
+
+
+def test_equality(trained_model):
+    assert trained_model == trained_model

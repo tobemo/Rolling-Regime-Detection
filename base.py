@@ -134,9 +134,18 @@ class MyHMM(ABC):
         config = json.loads(config)
         return cls.from_config(config)
 
-
     def _check(self) -> None:
         # Don't call check on fitted models.
         # Loading from config breaks `_check` because not all attributed needed for fitting are set.
         if not self.is_fitted:
             super()._check()
+    
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        if not self.is_fitted or not other.is_fitted:
+            return False
+        cond_a = np.array_equal(self.startprob_, other.startprob_)
+        cond_b = np.array_equal(self.transmat_, other.transmat_)
+        cond_c = np.array_equal(self.mapping, other.mapping)
+        return cond_a & cond_b & cond_c
