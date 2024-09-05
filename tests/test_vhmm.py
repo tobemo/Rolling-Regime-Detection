@@ -35,7 +35,7 @@ def test_check(trained_model):
     trained_model._check()
 
     # check if self._check is not disabled for unfitted models
-    obj = MyVariationalGaussianHMM(**trained_model.config)
+    obj = MyVariationalGaussianHMM(**trained_model.init_config)
     obj.n_features = trained_model.n_features
     obj.means_prior_ = np.array([])
     obj.means_posterior_ = np.array([])
