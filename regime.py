@@ -276,8 +276,8 @@ class RegimeClassifier():
         # compare costs
         cheapest_model = new_model
         if new_regime_is_advised(
-            added_regime_cost=transition_cost_matrix_added_regime,
-            regime_cost=transition_cost_matrix_current_regimes,
+            regime_cost=new_model.transition_cost,
+            added_regime_cost=new_model_with_added_regime.transition_cost,
             threshold=self.transition_threshold,
         ):
             cheapest_model = new_model_with_added_regime
