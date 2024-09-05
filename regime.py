@@ -47,7 +47,6 @@ class RegimeClassifier():
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self.classifier_config = dict(
             n_components=n_components,
-            init_params="stmc",
             n_iter=n_iter,
             tol=tol,
             random_state=random_state,
@@ -167,6 +166,7 @@ class RegimeClassifier():
             best_sub_model = None
             best_log_likelihood = -np.inf
             cfg = self.classifier_config
+            cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
             for s in range(k):
                 cfg['random_state'] = s
@@ -314,16 +314,11 @@ class RegimeClassifier():
         self.model.predict_proba(X, lengths=lengths)
 
     @classmethod
-    def from_jsons(cls, meta_config: str, configs: list[str]):
+    def from_jsons(cls, classifier_config: str, configs: list[str]):
         """Fill `self.models` with MyVariationalGaussianHMM initialized using a json string."""
-        if len(configs) == 0:
-            raise RuntimeError(
-                "Can't initialize 'RegimeClassifier' since configs is an empty list."
-            )
-        
         # create regime classifier object
-        meta_config = json.loads(meta_config)
-        regime_classifier = cls(**meta_config)
+        classifier_config = json.loads(classifier_config)
+        regime_classifier = cls(**classifier_config)
 
         # load models and sort by timestamp
         configs = configs[-regime_classifier.models.maxlen:]
