@@ -175,3 +175,4 @@ def test_mapped_predictions():
 
 def test_equality(trained_model):
     assert trained_model == trained_model
+    assert not trained_model == MyVariationalGaussianHMM()
