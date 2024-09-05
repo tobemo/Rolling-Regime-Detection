@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, match_regimes, calculate_total_cost, new_regime_is_advised, added_regime_costs_less, old_regime_is_too_costly
 from my_vhmm import MyVariationalGaussianHMM
@@ -29,6 +30,14 @@ def rc_populated() -> RegimeClassifier:
     )
     return rc
 
+
+@pytest.fixture
+def rc_fitted() -> RegimeClassifier:
+    rc = RegimeClassifier(n_components=2)
+    rc.fit(X[:20, None])
+    rc.fit(X[:, None])
+    return rc
+
 def test_init():
     rc = RegimeClassifier(n_components=3)
 
@@ -37,7 +46,7 @@ def test_properties_with_no_models(rc):
     with pytest.raises(AttributeError):
         rc.model
     
-    assert isinstance(rc.init_config, dict)
+    assert isinstance(rc.classifier_config, dict)
     assert not rc.has_models
     assert not rc.is_fitted
     assert rc.n_components == 3
@@ -46,7 +55,7 @@ def test_properties_with_no_models(rc):
 
 def test_properties_with_untrained_model(rc_populated):
     rc_populated.model
-    assert isinstance(rc_populated.init_config, dict)
+    assert isinstance(rc_populated.classifier_config, dict)
 
     assert rc_populated.has_models
     assert not rc_populated.is_fitted
@@ -58,7 +67,7 @@ def test_properties_with_untrained_model(rc_populated):
 def test_properties_with_trained_model(rc_populated):
     rc_populated.model.fit(X[:, None])
     rc_populated.model.transition_cost = 3
-    assert isinstance(rc_populated.init_config, dict)
+    assert isinstance(rc_populated.classifier_config, dict)
 
     assert rc_populated.has_models
     assert rc_populated.is_fitted
@@ -277,3 +286,7 @@ def test_fit():
     rc.fit(X[:50, None])
     rc.fit(X[:, None])
 
+
+def test_json(rc_fitted):
+    string = rc_fitted.classifier_to_json()
+    assert rc_fitted.classifier_config == json.loads(string)
