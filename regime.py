@@ -1,6 +1,7 @@
 import json
 import os
 from collections import deque
+from copy import deepcopy
 from logging import Logger, getLogger
 from typing import Optional
 
@@ -45,7 +46,7 @@ class RegimeClassifier():
         If n_components is an int >0 then that number of regimes is used."""
         self.name = 'root' or name
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
-        self.classifier_config = dict(
+        self._classifier_config = dict(
             n_components=n_components,
             n_iter=n_iter,
             tol=tol,
@@ -81,8 +82,11 @@ class RegimeClassifier():
         """Directly access a tracked model."""
         return self.models[i]
     
-    classifier_config: dict
-    """Config used to create RegimeClassifier object."""
+    _classifier_config: dict
+    @property
+    def classifier_config(self) -> dict:
+        """Config used to create RegimeClassifier object."""
+        return deepcopy(self._classifier_config)
     @property
     def last_model_config(self) -> dict:
         """The config of the latest model."""
