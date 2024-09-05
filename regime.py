@@ -112,6 +112,7 @@ class RegimeClassifier():
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
     
+    _transition_threshold: float = None
     @property
     def transition_threshold(self) -> float:
         """A new regime should only be added when the transition cost exceeds this threshold.
@@ -121,6 +122,9 @@ class RegimeClassifier():
         
         Returns inf if not enough data is present.
         """
+        if self._transition_threshold:
+            return self._transition_threshold
+        
         costs = [model.transition_cost for model in self.models]
         costs = np.array(costs)
         costs = costs[costs < np.inf]
@@ -133,6 +137,9 @@ class RegimeClassifier():
         mean = costs.mean()
         std = costs.std()
         return mean + self._deviation_mult * std
+    @transition_threshold.setter
+    def transition_threshold(self, threshold: float) -> float:
+        self._transition_threshold = threshold
 
     def initial_fit(
             self,
