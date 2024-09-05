@@ -6,7 +6,6 @@ from logging import Logger, getLogger
 from typing import Optional
 
 import numpy as np
-import pandas as pd
 from scipy import optimize, stats
 from sklearn.metrics import silhouette_score
 
