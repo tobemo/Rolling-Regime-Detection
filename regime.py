@@ -341,9 +341,9 @@ class RegimeClassifier():
         """Returns initial kwargs, used to initialize this RegimeClassifier object, as a json string."""
         return json.dumps(self.classifier_config)
     
-    def models_to_jsons(self) -> dict[int, str]:
+    def models_to_jsons(self) -> list[str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
-        return {model.timestamp: model.to_json() for model in self.models}
+        return [model.to_json() for model in self.models]
     
     def __eq__(self, other) -> bool:
         if not isinstance(other, RegimeClassifier):
