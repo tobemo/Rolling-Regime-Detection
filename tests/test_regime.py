@@ -1,5 +1,5 @@
 import numpy as np
-from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, match_regimes, calculate_total_cost
+from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, match_regimes, calculate_total_cost, new_regime_is_advised, added_regime_costs_less, old_regime_is_too_costly
 from my_vhmm import MyVariationalGaussianHMM
 import pytest
 
@@ -95,16 +95,16 @@ def test_model_setting_and_getting(rc):
     assert rc.models[3] == 'D'
 
 
-# def test_initial_fit():
-#     rc = RegimeClassifier(n_components=2, n_iter=5)
-#     rc.initial_fit(X[:, None])
-#     assert rc.n_components == 2
+def test_initial_fit():
+    rc = RegimeClassifier(n_components=2, n_iter=5)
+    rc.initial_fit(X[:, None])
+    assert rc.n_components == 2
 
-#     rc = RegimeClassifier(n_components=[2,3], n_iter=5)
-#     rc.initial_fit(X[:, None])
+    rc = RegimeClassifier(n_components=[2,3], n_iter=5)
+    rc.initial_fit(X[:, None])
 
-#     rc = RegimeClassifier(n_components=-1, n_iter=2)
-#     rc.initial_fit(X[:, None])
+    rc = RegimeClassifier(n_components=-1, n_iter=2)
+    rc.initial_fit(X[:, None])
 
 
 def test_extend_transmat():
@@ -230,6 +230,24 @@ def test_calculate_total_cost():
                     [0.5, 0.5, 0.5]])
     cost = calculate_total_cost(tcm)
     assert cost == 0.5 / 3
+
+
+def test_new_regime_is_advised():
+    assert added_regime_costs_less(
+        regime_cost=2,
+        added_regime_cost=1
+    )
+
+    assert old_regime_is_too_costly(
+        regime_cost=2,
+        threshold=1
+    )
+
+    assert new_regime_is_advised(
+        regime_cost=3,
+        added_regime_cost=2,
+        threshold=2.5,
+    )
 
 
 def test_fit():
