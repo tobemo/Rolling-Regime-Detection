@@ -147,11 +147,26 @@ class MyHMM(ABC):
             super()._check()
     
     def __eq__(self, other) -> bool:
-        if not isinstance(other, type(self)):
+        if not issubclass(type(other), MyHMM):
             return False
-        if not self.is_fitted or not other.is_fitted:
-            return False
-        cond_a = np.array_equal(self.startprob_, other.startprob_)
-        cond_b = np.array_equal(self.transmat_, other.transmat_)
-        cond_c = np.array_equal(self.mapping, other.mapping)
-        return cond_a & cond_b & cond_c
+        if not self.is_fitted and not other.is_fitted:
+            return self._compare_unfitted(other)
+        elif self.is_fitted and other.is_fitted:
+            return self._compare_fitted(other)
+        return False
+
+    def _compare_unfitted(self, other) -> bool:
+        keys_to_compare = ['n_components', 'init_params', 'n_iter', 'tol']
+
+        return all([
+            self.init_config[k] == other.init_config[k] 
+            for k in keys_to_compare
+        ])
+    
+    def _compare_fitted(self, other) -> bool:
+        return (
+            np.array_equal(self.startprob_, other.startprob_) and
+            np.array_equal(self.transmat_, other.transmat_) and
+            np.array_equal(self.mapping, other.mapping)
+        )
+

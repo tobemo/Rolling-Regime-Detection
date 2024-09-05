@@ -103,8 +103,17 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     def __eq__(self, other) -> bool:
         if not super().__eq__(other):
             return False
-        cond_a = np.array_equal(self.means_, other.means_)
-        cond_b = np.array_equal(self.covars_, other.covars_)
-        cond_c = self.n_features == other.n_features
-        return cond_a and cond_b and cond_c
+        if self.is_fitted and other.is_fitted:
+            return self._compare_fitted(other)
+        if not self.is_fitted and not other.is_fitted:
+            return super()._compare_unfitted(other)
+        return False
+    
+    def _compare_fitted(self, other) -> bool:
+        return (
+            super()._compare_fitted(other) and
+            np.array_equal(self.means_, other.means_) and
+            np.array_equal(self.covars_, other.covars_) and
+            self.n_features == other.n_features
+        )
 

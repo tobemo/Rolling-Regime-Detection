@@ -208,4 +208,8 @@ def test_equality(trained_model):
     other.mapping = trained_model.mapping
     assert other == trained_model
 
+    # unfitted models are the same if they have the same initialization
+    a =  MyVariationalGaussianHMM(n_components=3)
+    b = MyVariationalGaussianHMM(n_components=3)
+    assert a == b
 
