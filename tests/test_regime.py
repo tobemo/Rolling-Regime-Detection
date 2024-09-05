@@ -134,6 +134,28 @@ def test_extend_startprob():
     assert extended == pytest.approx(expected)
 
 
+def test_transition_threshold(rc, rc_populated):
+    # no models
+    assert rc.transition_threshold == np.inf
+
+    # < 8 models
+    rc_populated.model.transition_cost = 3
+    assert rc_populated.transition_threshold == 1.2 * 3
+    
+    # setting
+    rc.transition_threshold = 3
+    assert rc.transition_threshold == 3
+    rc.transition_threshold = None
+    assert rc.transition_threshold == np.inf
+
+    # > 8 models
+    model = rc_populated.model
+    model.transition_cost = 3
+    for _ in range(8):
+        rc.models.append(model)
+    assert rc.transition_threshold == 3
+
+
 def test_transition_cost_matrix():
     size = 10
     high = 2
