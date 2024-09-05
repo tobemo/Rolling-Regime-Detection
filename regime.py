@@ -349,6 +349,20 @@ class RegimeClassifier():
     def models_to_jsons(self) -> dict[int, str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
         return {model.timestamp: model.to_json() for model in self.models}
+    
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, RegimeClassifier):
+            return False
+        
+        if not self.is_fitted and not other.is_fitted:
+            return self.classifier_config == other.classifier_config
+        
+        if self.has_models and other.has_models:
+            cond_a = self.model == other.model
+            cond_b = self.transition_threshold == other.transition_threshold
+            return cond_a & cond_b
+        
+        return False
 
 
 def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
