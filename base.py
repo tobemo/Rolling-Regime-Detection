@@ -109,7 +109,6 @@ class MyHMM(ABC):
             "timestamp": self.timestamp
         }
 
-    @abstractmethod
     def get_config(self) -> dict:
         """Get config that exactly describes this model.
         This not only includes thins like creation time and number of components but also things like start probabilities.
@@ -117,6 +116,13 @@ class MyHMM(ABC):
         Can be used to initialize this class to an already fitted, and ready to use, model; when using MyVariationalGaussianHMM.from_config()
         
         This enables serialization and persistence."""
+        config = {
+            "timestamp": self.timestamp,
+            "transition_cost": self.transition_cost
+        }
+        if hasattr(self, "mapping"):
+            config["mapping"] = self.mapping.tolist()
+        return config
 
     def to_json(self) -> str:
         """Model to json string."""

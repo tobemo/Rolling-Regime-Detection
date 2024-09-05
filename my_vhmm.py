@@ -54,24 +54,23 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
         )
     
     def get_config(self) -> dict:
-        config = {
-            "timestamp": self.timestamp,
-            "n_components": self.n_components,
-            "init_params": "" if self.is_fitted else self.init_params,
-            "random_state": self.random_state,
-            "n_iter": self.n_iter,
-            "tol": self.tol,
-            "verbose": self.verbose,
-            "covariance_type": self.covariance_type,
-            "startprob": self.startprob_.tolist(),
-            "transmat": self.transmat_.tolist(),
-            "means": self.means_.tolist(),
-            "covars": self.covars_.tolist(),
-            "n_features": self.n_features,
-            "transition_cost": self.transition_cost,
-        }
-        if hasattr(self, 'mapping'):
-            config["mapping"] = self.mapping.tolist()
+        config = super().get_config()
+        config.update(
+            {
+                "n_components": self.n_components,
+                "init_params": "" if self.is_fitted else self.init_params,
+                "random_state": self.random_state,
+                "n_iter": self.n_iter,
+                "tol": self.tol,
+                "verbose": self.verbose,
+                "covariance_type": self.covariance_type,
+                "startprob": self.startprob_.tolist(),
+                "transmat": self.transmat_.tolist(),
+                "means": self.means_.tolist(),
+                "covars": self.covars_.tolist(),
+                "n_features": self.n_features,
+            }
+        )
         return config
     
     @classmethod
