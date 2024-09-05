@@ -291,6 +291,8 @@ class RegimeClassifier():
             self.logger.info(
                 f"Upped from {self.n_components} to {cheapest_model.n_components} regimes."
             )
+        else:
+            self.logger.info(f"Maintaining {cheapest_model.n_components} regimes.")
                 
         # store cheapest model
         self.model = cheapest_model
