@@ -68,7 +68,10 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             "means": self.means_.tolist(),
             "covars": self.covars_.tolist(),
             "n_features": self.n_features,
+            "transition_cost": self.transition_cost,
         }
+        if hasattr(self, 'mapping'):
+            config["mapping"] = self.mapping.tolist()
         return config
     
     @classmethod
@@ -86,6 +89,9 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             timestamp=config["timestamp"],
         )
         model.n_features = config["n_features"]
+        model.transition_cost = config["transition_cost"]
+        if 'mapping' in config:
+            model.mapping = np.array(config["mapping"])
         
         # assign parameters
         model.startprob_ = np.array(config["startprob"])

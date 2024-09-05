@@ -86,6 +86,15 @@ def test_from_json(trained_model):
     y1 = obj2.predict(X[:, None])
     assert y1 == pytest.approx(y0)
 
+    # with mapping set
+    trained_model.mapping = np.array([[0, 1, 2, 3], [1, 2, 3, 0]]).T
+    string = trained_model.to_json()
+    obj2 = MyVariationalGaussianHMM.from_json(string)
+
+    y0 = trained_model.predict(X[:, None])
+    y1 = obj2.predict(X[:, None])
+    assert y1 == pytest.approx(y0)
+
 
 def test_transition_cost(trained_model):
     assert trained_model.transition_cost == np.inf
