@@ -45,7 +45,7 @@ class RegimeClassifier():
         If n_components is an int >0 then that number of regimes is used."""
         self.name = 'root' or name
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
-        self._init_config = dict(
+        self.classifier_config = dict(
             n_components=n_components,
             init_params="stmc",
             n_iter=n_iter,
@@ -82,14 +82,14 @@ class RegimeClassifier():
         """Directly access a tracked model."""
         return self.models[i]
     
-    _init_config: dict
+    classifier_config: dict
     """Config used to create RegimeClassifier object."""
     @property
-    def init_config(self) -> dict:
+    def last_model_config(self) -> dict:
         """The config of the latest model."""
         if self.has_models:
            return self.models[-1].init_config
-        return self._init_config
+        return self.classifier_config
     
     @property
     def has_models(self) -> bool:
@@ -153,7 +153,7 @@ class RegimeClassifier():
         This model will then be the starting point for all future fits.
         
         If n_components in _first_config is -1 the best regime is auto-detected. Only 2-9 are considered for n_components."""
-        regimes = self._init_config['n_components']
+        regimes = self.classifier_config['n_components']
         if regimes == -1:
             regimes = [2, 3, 4, 5, 6, 7, 8, 9]
         elif isinstance(regimes, int):
@@ -166,7 +166,7 @@ class RegimeClassifier():
             # for the current number of regimes
             best_sub_model = None
             best_log_likelihood = -np.inf
-            cfg = self._init_config
+            cfg = self.classifier_config
             cfg['n_components'] = regime
             for s in range(k):
                 cfg['random_state'] = s
@@ -222,12 +222,12 @@ class RegimeClassifier():
         # model 2: transfer learn with same number of regimes as previous
         new_model = copy_model(
             old_model=self.model,
-            config=self.init_config,
+            config=self.last_model_config,
         )
         new_model.fit(X, lengths=lengths)
 
         # model 3: transfer learn but add one extra regime
-        config = self.init_config
+        config = self.last_model_config
         config['n_components'] += 1
         new_model_with_added_regime = copy_model(
             old_model=model_previous,
@@ -343,8 +343,8 @@ class RegimeClassifier():
         return self.classifier_to_json(), self.models_to_jsons()
     
     def classifier_to_json(self) -> str:
-        """Returns initial kwargs, used to initialize this RegimeClassifier object, as json string."""
-        return json.load(self._init_config)
+        """Returns initial kwargs, used to initialize this RegimeClassifier object, as a json string."""
+        return json.dumps(self.classifier_config)
     
     def models_to_jsons(self) -> dict[int, str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
