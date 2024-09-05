@@ -276,8 +276,8 @@ class RegimeClassifier():
         # compare costs
         cheapest_model = new_model
         if new_regime_is_advised(
-            new_regime_cost=transition_cost_matrix_added_regime,
-            old_regime_cost=transition_cost_matrix_current_regimes,
+            added_regime_cost=transition_cost_matrix_added_regime,
+            regime_cost=transition_cost_matrix_current_regimes,
             threshold=self.transition_threshold,
         ):
             cheapest_model = new_model_with_added_regime
@@ -340,7 +340,6 @@ class RegimeClassifier():
     def models_to_jsons(self) -> dict[int, str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
         return {model.timestamp: model.to_json() for model in self.models}
-
 
 
 def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
@@ -519,34 +518,34 @@ def calculate_total_cost(transition_cost_matrix: np.ndarray) -> float:
     return normalized_cost
 
 
-def new_regime_costs_less(
-        old_regime_cost: float,
-        new_regime_cost: float,
+def added_regime_costs_less(
+        regime_cost: float,
+        added_regime_cost: float,
     ) -> bool:
     """c0 > c1"""
-    return old_regime_cost > new_regime_cost
+    return regime_cost > added_regime_cost
 
 
 def old_regime_is_too_costly(
-        old_regime_cost: float,
+        regime_cost: float,
         threshold: float,
     ) -> bool:
     """c0 > c-, with c- being a threshold"""
-    return old_regime_cost > threshold
+    return regime_cost > threshold
 
 
 def new_regime_is_advised(
-        old_regime_cost: float,
-        new_regime_cost: float,
+        regime_cost: float,
+        added_regime_cost: float,
         threshold: float,
     ) -> bool:
     """Both c0 > c1 and c0 > c-"""
-    cond = new_regime_costs_less(
-        old_regime_cost=old_regime_cost,
-        new_regime_cost=new_regime_cost
+    cond = added_regime_costs_less(
+        regime_cost=regime_cost,
+        added_regime_cost=added_regime_cost
     )
     cond &= old_regime_is_too_costly(
-        old_regime_cost=old_regime_cost,
+        regime_cost=regime_cost,
         threshold=threshold,
     )
     return cond
