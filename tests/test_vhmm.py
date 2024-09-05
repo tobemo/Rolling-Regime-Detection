@@ -183,5 +183,29 @@ def test_mapped_predictions():
 
 
 def test_equality(trained_model):
+    other = MyVariationalGaussianHMM(n_components=trained_model.n_components)
     assert trained_model == trained_model
-    assert not trained_model == MyVariationalGaussianHMM()
+    assert not other == trained_model
+
+    other = MyVariationalGaussianHMM(n_components=trained_model.n_components)
+    other.fit(np.random.rand(len(X))[:, None])
+    other.mapping = np.array([[0,1,2,3],[1,2,3,0]]).T
+
+    # only when transmat, startprob, means, covars and mapping are the same
+    # are moth models equal
+    other.transmat_ = trained_model.transmat_
+    assert not other == trained_model
+
+    other.startprob_ = trained_model.startprob_
+    assert not other == trained_model
+    
+    other.means_ = trained_model.means_
+    assert not other == trained_model
+
+    other.covars_ = trained_model.covars_
+    assert not other == trained_model
+
+    other.mapping = trained_model.mapping
+    assert other == trained_model
+
+
