@@ -118,18 +118,21 @@ class MyHMM(ABC):
         if self.random_state:
             return super().fit(X, lengths)
         return self._multi_fit(X, lengths, k)
-        
+    
+    def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
+        return np.select(
+            [predictions == i for i in self.mapping[:,0]],
+            self.mapping[:,1]
+        )
+
     def predict(
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to ``X``. States are mapped using self.mapper."""
-        # FIXME: not being called
         predictions = super().predict(X, lengths=lengths)
-        for key, value in self.mapper.items():
-            predictions[predictions == key] = -1 * value
-        predictions = np.abs(predictions)
+        predictions = self.map_predictions(predictions)
         return predictions
     
     def predict_proba(
@@ -137,6 +140,8 @@ class MyHMM(ABC):
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
+        if hasattr(self, '_mapping'):
+            raise NotImplementedError("Using predict_proba while having a mapper set is not supported.")
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
         return probas[:, reordering]
