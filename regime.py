@@ -508,16 +508,17 @@ def get_transition_cost_matrix(
     if n_new_regimes < n_old_regimes:
         raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new_regimes} < {n_old_regimes}.")
     
-    # ensure squareness
-    costs = np.zeros((n_old_regimes, n_new_regimes), dtype=np.float32)
+    costs = np.full(
+        (n_old_regimes, n_new_regimes),
+        fill_value=np.inf,
+        dtype=np.float32
+    )
 
     for o in range(n_old_regimes):
         for n in range(n_new_regimes):
             u = data[old_regimes == o]
             v = data[new_regimes == n]
-            if len(u) == 0 or len(v) == 0:
-                costs[o,n] = np.inf
-            else:
+            if len(u) != 0 and len(v) != 0:
                 costs[o,n] = get_distance(u, v)
 
     return costs
