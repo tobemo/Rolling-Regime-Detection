@@ -228,7 +228,7 @@ def test_transition_cost_matrix():
     new_regimes = old_regimes.copy()
     data[old_regimes == 1] = 2
     tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
-    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(high))
+    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(high) / high)
 
 
 def test_match_regimes():

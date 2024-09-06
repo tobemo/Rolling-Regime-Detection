@@ -522,6 +522,11 @@ def get_transition_cost_matrix(
                 costs[o,n] = np.inf
             else:
                 costs[o,n] = get_distance(u, v)
+
+    # normalize by old regimes
+    # old regimes is constant when comparing maintaining number of regimes 
+    # or adding one regime
+    costs /= n_old_regimes
     return costs
 
 
