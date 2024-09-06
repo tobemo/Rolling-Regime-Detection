@@ -502,7 +502,7 @@ def get_transition_cost_matrix(
         raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new_regimes} < {n_old_regimes}.")
     
     costs = np.full(
-        (n_old_regimes, n_new_regimes),
+        (n_new_regimes, n_new_regimes),
         fill_value=np.inf,
         dtype=np.float32
     )
@@ -517,9 +517,13 @@ def get_transition_cost_matrix(
     return costs
 
 
-def match_regimes(transition_cost_matrix: np.ndarray) -> np.ndarray:
-    """Find the best match of old to new regimes."""
-    idx = optimize.linear_sum_assignment(transition_cost_matrix)
+def match_regimes(cost_matrix: np.ndarray) -> np.ndarray:
+    """Find the cheapest match of row to columns."""
+    cost_matrix = np.nan_to_num(
+        x=cost_matrix,
+        nan= 2 * cost_matrix[np.isfinite(cost_matrix)].max()
+    )
+    idx = optimize.linear_sum_assignment(cost_matrix)
     return np.stack(idx).T
 
 
