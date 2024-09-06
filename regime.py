@@ -166,31 +166,24 @@ class RegimeClassifier():
         for regime in regimes:
             # first find the best initialization 
             # for the current number of regimes
-            best_sub_model = None
-            best_log_likelihood = -np.inf
             cfg = self.classifier_config
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
-            for s in range(k):
-                cfg['random_state'] = s
-                this_model = MyVariationalGaussianHMM(**cfg)
-                this_model.fit(X, lengths=lengths)
-                this_log_likelihood = this_model.score(X)
-                if this_log_likelihood > best_log_likelihood:
-                    best_sub_model = this_model
-                    best_log_likelihood = this_log_likelihood
+            cfg['random_state'] = None
+            sub_model = MyVariationalGaussianHMM(**cfg)
+            sub_model.fit(X, lengths=lengths, k=k)
             
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
-            y = best_sub_model.predict(X, lengths=lengths)
+            y = sub_model.predict(X, lengths=lengths)
             if len(np.unique(y)) < 2:
                 continue
             this_silhouette_score = silhouette_score(
                 X,
-                best_sub_model.predict(X, lengths=lengths)
+                sub_model.predict(X, lengths=lengths)
             )
             if this_silhouette_score > best_silhouette_score:
-                best_model = best_sub_model
+                best_model = sub_model
                 best_silhouette_score = this_silhouette_score
         
         # ensure a decent model has actually been fitted
