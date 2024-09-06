@@ -48,11 +48,11 @@
             - [x] with previous models
 	- [x] self.config works
     - **function tests**
-        - [ ] right regime detection
-        - [ ] right tracking of regimes
+        - [~] right regime detection
+        - [x] right tracking of regimes
         - [ ] predict
-            - [ ] mapper is set
-            - [ ] mapper is correct
+            - [x] mapper is set
+            - [x] mapper is correct
             - [ ] mapping is constant over many models
         - [ ] new regime
         - [ ] regime disappearing?
