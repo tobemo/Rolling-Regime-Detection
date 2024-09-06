@@ -167,9 +167,9 @@ def test_transition_threshold(rc, rc_populated):
 
 def test_transition_cost_matrix():
     size = 10
-    high = 2
+    n_regimes = 2
     data = np.random.rand(size)
-    old_regimes = np.random.randint(low=0, high=high, size=size)
+    old_regimes = np.random.randint(low=0, high=n_regimes, size=size)
     new_regimes = old_regimes.copy()
 
     # old regimes < new regimes
@@ -177,24 +177,24 @@ def test_transition_cost_matrix():
         get_transition_cost_matrix(
             old_regimes=old_regimes,
             new_regimes=new_regimes,
-            n_old_regimes=high+1,
-            n_new_regimes=high,
+            n_old_regimes=n_regimes+1,
+            n_new_regimes=n_regimes,
             data=data,
         )
     # old regimes == new regimes
     get_transition_cost_matrix(
         old_regimes=old_regimes,
         new_regimes=new_regimes,
-        n_old_regimes=high,
-        n_new_regimes=high,
+        n_old_regimes=n_regimes,
+        n_new_regimes=n_regimes,
         data=data,
     )
     # old regimes > new regimes
     get_transition_cost_matrix(
         old_regimes=old_regimes,
         new_regimes=new_regimes,
-        n_old_regimes=high,
-        n_new_regimes=high+5,
+        n_old_regimes=n_regimes,
+        n_new_regimes=n_regimes+5,
         data=data,
     )
 
@@ -202,33 +202,44 @@ def test_transition_cost_matrix():
     tcm = get_transition_cost_matrix(
         old_regimes=old_regimes,
         new_regimes=new_regimes,
-        n_old_regimes=high,
-        n_new_regimes=high+1,
+        n_old_regimes=n_regimes,
+        n_new_regimes=n_regimes+1,
         data=data,
     )
     assert tcm.shape[0] == tcm.shape[1]
+
+    # fill value
+    tcm = get_transition_cost_matrix(
+        old_regimes=old_regimes,
+        new_regimes=new_regimes,
+        n_old_regimes=n_regimes,
+        n_new_regimes=n_regimes+1,
+        data=data,
+        fill_value=5
+    )
+    assert tcm[-1,0] == 5 / n_regimes
     
     # fill value
     tcm = get_transition_cost_matrix(
         old_regimes=old_regimes,
         new_regimes=new_regimes,
-        n_old_regimes=high,
-        n_new_regimes=high+1,
+        n_old_regimes=n_regimes,
+        n_new_regimes=n_regimes+1,
         data=data,
     )
-    assert tcm[-1] == pytest.approx(np.zeros(high+1))
+    assert tcm[-1] == pytest.approx(np.zeros(n_regimes+1))
 
     # correctness of the diagonal
     # when regimes are equal
-    tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
-    assert np.diag(tcm) == pytest.approx(np.zeros(high))
+    tcm = get_transition_cost_matrix(old_regimes, new_regimes, n_regimes, n_regimes, data)
+    assert np.diag(tcm) == pytest.approx(np.zeros(n_regimes))
 
     data = np.ones(size)
     old_regimes = np.random.randint(low=0, high=2, size=size)
     new_regimes = old_regimes.copy()
     data[old_regimes == 1] = 2
-    tcm = get_transition_cost_matrix(old_regimes, new_regimes, high, high, data)
-    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(high) / high)
+    tcm = get_transition_cost_matrix(old_regimes, new_regimes, n_regimes, n_regimes, data)
+    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(n_regimes) / n_regimes)
 
 
 def test_match_regimes():
