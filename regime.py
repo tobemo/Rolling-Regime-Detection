@@ -531,7 +531,7 @@ def calculate_total_cost(transition_cost_matrix: np.ndarray) -> float:
     """Find the best match of old to new regimes and calculate the total cost."""
     row_ind, col_ind = match_regimes(transition_cost_matrix).T
     total_cost = transition_cost_matrix[row_ind, col_ind].sum()
-    normalized_cost = total_cost / transition_cost_matrix.shape[0] # normalize by the number of old regimes
+    normalized_cost = total_cost / len(row_ind) # normalize by the number of old regimes
     return normalized_cost
 
 
