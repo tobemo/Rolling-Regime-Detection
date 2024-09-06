@@ -20,6 +20,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     # m: mean
     # c: covariance matrix
     """
+    n_components: int
     @property
     def means_(self):
         return self.means_posterior_
