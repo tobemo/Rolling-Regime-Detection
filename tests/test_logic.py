@@ -84,6 +84,40 @@ def test_map(model_0, Xs, Zs):
     assert Z_ == pytest.approx(model_0.predict(X))
 
 
+def test_mapping_long_term(model_0, Xs):
+    model_a = model_0
+    for X in Xs[1:]:
+        # add a regime each iteration
+        model_b = MyVariationalGaussianHMM(
+            n_components=model_a.n_components + 1
+        )
+        model_b.fit(X)
+
+        tcm = get_transition_cost_matrix(
+            old_regimes=model_a.predict(X),
+            new_regimes=model_b.predict(X),
+            n_old_regimes=model_a.n_components,
+            n_new_regimes=model_b.n_components,
+            data=X
+        )
+
+        model_b.mapping = match_regimes(tcm)
+        model_a = model_b
+    
+    # TODO: I don't think mapping holds true over time
+    # check mapping over time
+    X = Xs[0]
+    tcm = get_transition_cost_matrix(
+        old_regimes=model_0.predict(X),
+        new_regimes=model_a.predict(X),
+        n_old_regimes=model_0.n_components,
+        n_new_regimes=model_a.n_components,
+        data=X
+    )
+    mapping = match_regimes(tcm)
+    pass
+
+
 def train_model(n_components: int, X: np.ndarray) -> MyVariationalGaussianHMM:
     _score = -np.inf
     model = None
@@ -129,3 +163,8 @@ def test_increasing_regime(model_0, Xs):
     cost_3_regimes = calculate_total_cost(tcm_3_regimes)
     assert cost_3_regimes < cost_2_regimes
 
+    # iterate all x
+    # check if last model has similar predict on X[0] as model_0
+        # only for first 2 regimes
+        # comparable mean and std
+        # or low distance

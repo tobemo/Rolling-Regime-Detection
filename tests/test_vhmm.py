@@ -145,7 +145,7 @@ def test_setting_of_mapping(trained_model):
     trained_model.mapping = map
 
 
-def test_mapper(trained_model):
+def test_mapping(trained_model):
     map = np.stack(
         [
             [0, 1, 2, 3],
@@ -158,6 +158,30 @@ def test_mapper(trained_model):
     assert np.array(list(mapper.keys())) == pytest.approx(map[:,0])
     assert np.array(list(mapper.values())) == pytest.approx(map[:,1])
 
+    map_0 = np.array([
+        [0,1,2,3],
+        [0,1,2,3]
+    ])
+    map_0_1 = np.array([
+        [0,1,2,3],
+        [1,0,3,2]
+    ])
+    trained_model.mapping = map_0_1.T
+    
+    truth = np.array([0, 1, 2, 3])
+    prediction = np.array([1, 0, 3, 2])
+    mapped_prediction = trained_model.map_predictions(prediction)
+    assert mapped_prediction == pytest.approx(truth)
+
+    map_1_2 = np.array([
+        mapped_prediction,
+        [2, 0, 1, 3]
+    ])
+    trained_model.mapping = map_1_2.T
+    prediction = np.array([2, 0, 1, 3])
+    assert trained_model.map_predictions(prediction) == pytest.approx(truth)
+    # ! Don't even know if my test is correct
+    # hard to wrap my head around mapping over time
 
 def test_mapped_predictions():
     model = MyVariationalGaussianHMM(n_components=4)

@@ -11,9 +11,13 @@
         - [x] mapper
         - [~] mapped prediction / couldn't test with predictions of more than one class
 
+- [ ] 2 main struggle points:
+    - [ ] MAPPING SHOULD HOLD TRUE OVER TIME
+    - [ ] PROPERLY TESTING THE EMERGENCE OF NEW REGIMES
+
 - [x] FIGURE OUT HOW TO CREATE TEST DATA THAT RESULTS IN REPEATABLE OUTCOMES
     - this was in response to weird outcomes using earthquake data
-	  which turns out to be a numpy compatability issue
+	  which turns out to be a numpy compatibility issue
     - just downgraded np
 
 - [ ] test regime
