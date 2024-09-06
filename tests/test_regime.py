@@ -198,37 +198,6 @@ def test_transition_cost_matrix():
         data=data,
     )
 
-    # squareness
-    tcm = get_transition_cost_matrix(
-        old_regimes=old_regimes,
-        new_regimes=new_regimes,
-        n_old_regimes=n_regimes,
-        n_new_regimes=n_regimes+1,
-        data=data,
-    )
-    assert tcm.shape[0] == tcm.shape[1]
-
-    # fill value
-    tcm = get_transition_cost_matrix(
-        old_regimes=old_regimes,
-        new_regimes=new_regimes,
-        n_old_regimes=n_regimes,
-        n_new_regimes=n_regimes+1,
-        data=data,
-        fill_value=5
-    )
-    assert tcm[-1,0] == 5 / n_regimes
-    
-    # fill value
-    tcm = get_transition_cost_matrix(
-        old_regimes=old_regimes,
-        new_regimes=new_regimes,
-        n_old_regimes=n_regimes,
-        n_new_regimes=n_regimes+1,
-        data=data,
-    )
-    assert tcm[-1] == pytest.approx(np.zeros(n_regimes+1))
-
     # correctness of the diagonal
     # when regimes are equal
     tcm = get_transition_cost_matrix(old_regimes, new_regimes, n_regimes, n_regimes, data)
@@ -239,7 +208,7 @@ def test_transition_cost_matrix():
     new_regimes = old_regimes.copy()
     data[old_regimes == 1] = 2
     tcm = get_transition_cost_matrix(old_regimes, new_regimes, n_regimes, n_regimes, data)
-    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(n_regimes) / n_regimes)
+    assert np.diagonal(np.flipud(tcm)) == pytest.approx(np.ones(n_regimes))
 
 
 def test_match_regimes():

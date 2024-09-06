@@ -487,7 +487,6 @@ def get_transition_cost_matrix(
         n_old_regimes: int,
         n_new_regimes: int,
         data: np.ndarray,
-        fill_value: float = 0.
     ) -> np.ndarray:
     """Returns cost matrix.
     The cost matrix describes the distance between each old and new distribution. The cost is defined as the distance between the distributions of the data first index by an old regime and then index by a new regime.
@@ -499,7 +498,6 @@ def get_transition_cost_matrix(
         n_old_regimes (int): The number of old regimes. Can be higher than the highest value of `old_regimes`.
         n_new_regimes (int): The number of new regimes. Can be higher than the highest value of `new_regimes`.
         data (np.ndarray): Data from which regimes are derived.
-        fill_value (float, optional): Value to assign as cost for when `n_new_regimes > n_old_regimes`. In this case no comparison can be made for those extra regimes, in which case this fill value is used. Defaults to 0.
 
     Raises:
         ValueError: `n_new_regimes` shouldn't be lower then `n_old_regimes`.
@@ -507,17 +505,14 @@ def get_transition_cost_matrix(
     Returns:
         np.ndarray: Cost matrix. Rows denote the old regimes, columns the new. A row-column pair then denotes the cost of labeling the new regime the same value as the old one.
     """
-    n_old = n_old_regimes
-    n_new = n_new_regimes
-    if n_new < n_old:
-        raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new} < {n_old}.")
+    if n_new_regimes < n_old_regimes:
+        raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new_regimes} < {n_old_regimes}.")
     
     # ensure squareness
-    fill_value *= n_old_regimes # account for later normalization
-    costs = np.full((n_new, n_new), fill_value=fill_value, dtype=np.float32)
+    costs = np.zeros((n_old_regimes, n_new_regimes), dtype=np.float32)
 
-    for o in range(n_old):
-        for n in range(n_new):
+    for o in range(n_old_regimes):
+        for n in range(n_new_regimes):
             u = data[old_regimes == o]
             v = data[new_regimes == n]
             if len(u) == 0 or len(v) == 0:
@@ -525,10 +520,6 @@ def get_transition_cost_matrix(
             else:
                 costs[o,n] = get_distance(u, v)
 
-    # normalize by old regimes
-    # old regimes is constant when comparing maintaining number of regimes 
-    # or adding one regime
-    costs /= n_old_regimes
     return costs
 
 
