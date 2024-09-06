@@ -7,6 +7,8 @@ def test_init():
         obj = MyHMM()
     
     class MyHMMTest(MyHMM):
+        HMM = None
+        HMM_config = None
         def from_config(cls, config: dict):
             pass
         def get_config(self) -> dict:
