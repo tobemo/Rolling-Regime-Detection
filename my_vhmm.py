@@ -29,6 +29,14 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
         # monkey patch to make mean settable
         self.means_posterior_ = means
     
+    @property
+    def HMM(self) -> VariationalGaussianHMM:
+        return VariationalGaussianHMM
+    
+    @property
+    def HMM_config(self) -> dict:
+        return self._hmm_config
+
     def __init__(
             self,
             n_components=1,
@@ -39,9 +47,9 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             verbose=False,
             timestamp: int = None,
         ) -> None:
+        """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kepts, see `fit` and `multi_fit`.`"""
         MyHMM.__init__(self, timestamp=timestamp)
-        VariationalGaussianHMM.__init__(
-            self,
+        self._hmm_config = dict(
             covariance_type="full",
             algorithm="viterbi",
             params='stmc',
@@ -53,7 +61,11 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             tol=tol,
             verbose=verbose,
         )
-    
+        self.HMM.__init__(
+            self,
+            **self._hmm_config
+        )
+
     def get_config(self) -> dict:
         config = super().get_config()
         config.update(

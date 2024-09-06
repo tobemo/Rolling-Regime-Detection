@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 import time
 from abc import ABC, abstractmethod
@@ -69,11 +70,55 @@ class MyHMM(ABC):
             )
         )
     
+    @property
+    @abstractmethod
+    def HMM(self):
+        """HMM model to use."""
+        pass
+    
+    @property
+    @abstractmethod
+    def HMM_config(self):
+        """Config for HMM model."""
+        pass
+    
     def __init__(self, timestamp: int = None) -> None:
         super().__init__()
         self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
     
+    def _multi_fit(self,
+            X: np.ndarray,
+            lengths: Optional[list[int]] = None,
+            k: int = 5,
+        ):
+        score = -np.inf
+        model = None
+        config = self.HMM_config
+        for seed in range(k):
+            config['random_state'] = seed
+            _model = self.HMM(**config)
+            _model.fit(X, lengths)
+            _score = _model.score(X)
+            if _score > score:
+                model = _model
+                score = _score
+        
+        model = model or _model
+        self.__dict__.update(model.__dict__)
+
+        return self
+        
+    def fit(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]] = None,
+            k: int = 5,
+        ):
+        if self.random_state:
+            return super().fit(X, lengths)
+        return self._multi_fit(X, lengths, k)
+        
     def predict(
             self,
             X: np.ndarray,
@@ -99,7 +144,7 @@ class MyHMM(ABC):
     @property
     def init_config(self) -> dict:
         """Returns creation config."""
-        return {
+        return deepcopy({
             "n_components": self.n_components,
             "init_params": self.init_params,
             "random_state": self.random_state,
@@ -107,7 +152,7 @@ class MyHMM(ABC):
             "tol": self.tol,
             "verbose": self.verbose,
             "timestamp": self.timestamp
-        }
+        })
 
     def get_config(self) -> dict:
         """Get config that exactly describes this model.
