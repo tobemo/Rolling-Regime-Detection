@@ -1,6 +1,6 @@
 import pytest
 from my_vhmm import MyVariationalGaussianHMM
-from regime import get_transition_cost_matrix, match_regimes
+from regime import get_transition_cost_matrix, match_regimes, calculate_total_cost
 
 import numpy as np
 
@@ -14,8 +14,8 @@ def X() -> np.ndarray:
     means = [
         np.array([0.0, 0.0]),    # Mean of regime 1
         np.array([5.0, 5.0]),    # Mean of regime 2
-        np.array([10.0, 0.0]),   # Mean of regime 3
-        np.array([0.0, 10.0])    # Mean of regime 4
+        np.array([10.0, 10.0]),   # Mean of regime 3
+        np.array([2.0, 20.0])    # Mean of regime 4
     ]
 
     covariances = [
@@ -32,6 +32,11 @@ def X() -> np.ndarray:
 
 @pytest.fixture
 def Xs(X) -> list[np.ndarray]:
+    """
+    X[0]: 2 regimes;
+    X[1]: 3 regimes;
+    X[2]: 4 regimes;
+    """
     return [X[:i] for i in np.cumsum(n_samples_per_regime)[1:]]
 
 
@@ -50,6 +55,7 @@ def Zs(Z) -> list[np.ndarray]:
 
 @pytest.fixture
 def model_0(Xs, Zs) -> MyVariationalGaussianHMM:
+    """A model with 2 components."""
     model = MyVariationalGaussianHMM(n_components=2)
     model.fit(Xs[0])
     return model
@@ -76,3 +82,50 @@ def test_map(model_0, Xs, Zs):
 
     Z_ = model_1.predict(X)
     assert Z_ == pytest.approx(model_0.predict(X))
+
+
+def train_model(n_components: int, X: np.ndarray) -> MyVariationalGaussianHMM:
+    _score = -np.inf
+    model = None
+    for i in range(5):
+        _model = MyVariationalGaussianHMM(
+            n_components=n_components,
+            random_state=i
+        )
+        _model.fit(X)
+        if _model.score(X) > _score:
+            _score = _model.score(X)
+            model = _model
+    model = model or _model
+    return model   
+
+
+def test_increasing_regime(model_0, Xs):
+    X_3_regimes = Xs[2]
+    model_2_regimes = train_model(
+        n_components=model_0.n_components,
+        X=X_3_regimes,
+    )
+    model_3_regimes = train_model(
+        n_components=model_0.n_components + 1,
+        X=X_3_regimes,
+    )
+
+    tcm_2_regimes = get_transition_cost_matrix(
+        old_regimes=model_0.predict(X_3_regimes),
+        new_regimes=model_2_regimes.predict(X_3_regimes),
+        n_old_regimes=model_0.n_components,
+        n_new_regimes=model_2_regimes.n_components,
+        data=X_3_regimes,
+    )
+    cost_2_regimes = calculate_total_cost(tcm_2_regimes)
+    tcm_3_regimes = get_transition_cost_matrix(
+        old_regimes=model_0.predict(X_3_regimes),
+        new_regimes=model_3_regimes.predict(X_3_regimes),
+        n_old_regimes=model_0.n_components,
+        n_new_regimes=model_3_regimes.n_components,
+        data=X_3_regimes,
+    )
+    cost_3_regimes = calculate_total_cost(tcm_3_regimes)
+    assert cost_3_regimes < cost_2_regimes
+
