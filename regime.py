@@ -254,10 +254,12 @@ class RegimeClassifier():
 
         # store costs in model objects themselves
         new_model.transition_cost = calculate_total_cost(
-            transition_cost_matrix_current_regimes
+            transition_cost_matrix_current_regimes,
+            norm=model_previous.n_components,
         )
         new_model_with_added_regime.transition_cost = calculate_total_cost(
-            transition_cost_matrix_added_regime
+            transition_cost_matrix_added_regime,
+            norm=model_previous.n_components,
         )
 
         # store mapping from previous to current regime 
@@ -527,11 +529,13 @@ def match_regimes(cost_matrix: np.ndarray) -> np.ndarray:
     return np.stack(idx).T
 
 
-def calculate_total_cost(transition_cost_matrix: np.ndarray) -> float:
+def calculate_total_cost(transition_cost_matrix: np.ndarray, norm: float = 1) -> float:
     """Find the best match of old to new regimes and calculate the total cost."""
     row_ind, col_ind = match_regimes(transition_cost_matrix).T
-    total_cost = transition_cost_matrix[row_ind, col_ind].sum()
-    normalized_cost = total_cost / len(row_ind) # normalize by the number of old regimes
+    cost = transition_cost_matrix[row_ind, col_ind]
+    cost = cost[np.isfinite(cost)]
+    total_cost = cost.sum()
+    normalized_cost = total_cost / norm # normalize by the number of old regimes
     return normalized_cost
 
 
