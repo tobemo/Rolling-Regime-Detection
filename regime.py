@@ -264,12 +264,13 @@ class RegimeClassifier():
 
         # store mapping from previous to current regime 
         # in model objects themselves
-        new_model.mapping = match_regimes(
+        new_model.mapping = get_regime_map(
             transition_cost_matrix_current_regimes
         )
-        new_model_with_added_regime.mapping = match_regimes(
+        mapping = get_regime_map(
             transition_cost_matrix_added_regime
         )
+        new_model_with_added_regime.mapping = add_extra_regime_to_map(mapping)
 
         # logging
         self.logger.debug(f"Cost as is: {new_model.transition_cost}")
@@ -504,7 +505,7 @@ def get_transition_cost_matrix(
         raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new_regimes} < {n_old_regimes}.")
     
     costs = np.full(
-        (n_new_regimes, n_new_regimes),
+        (n_old_regimes, n_new_regimes),
         fill_value=np.inf,
         dtype=np.float32
     )
@@ -519,21 +520,44 @@ def get_transition_cost_matrix(
     return costs
 
 
-def match_regimes(cost_matrix: np.ndarray) -> np.ndarray:
+def get_regime_map(cost_matrix: np.ndarray) -> np.ndarray:
     """Find the cheapest match of row to columns."""
-    cost_matrix = np.nan_to_num(
-        x=cost_matrix,
-        nan= 2 * cost_matrix[np.isfinite(cost_matrix)].max()
-    )
     idx = optimize.linear_sum_assignment(cost_matrix)
     return np.stack(idx).T
 
 
+def add_extra_regime_to_map(map: np.ndarray) -> np.ndarray:
+    """
+    ```
+    array([[0, 2],
+           [1, 1],
+           [2, 0]])
+    ```
+    becomes
+
+    ```
+    array([[0, 2],
+           [1, 1],
+           [2, 0],
+           [3, 3]])
+    ```
+    """
+    n_regimes_desired = map.shape[0] + 1
+    missing_old_regime = list(
+        set(np.arange(0, n_regimes_desired)) -
+        set(map[:,0])
+    )[0]
+    missing_new_regime = list(
+        set(np.arange(0, n_regimes_desired)) -
+        set(map[:,1])
+    )[0]
+    return np.concatenate([map, [[missing_old_regime, missing_new_regime]]])
+
+
 def calculate_total_cost(transition_cost_matrix: np.ndarray, norm: float = 1) -> float:
     """Find the best match of old to new regimes and calculate the total cost."""
-    row_ind, col_ind = match_regimes(transition_cost_matrix).T
+    row_ind, col_ind = get_regime_map(transition_cost_matrix).T
     cost = transition_cost_matrix[row_ind, col_ind]
-    cost = cost[np.isfinite(cost)]
     total_cost = cost.sum()
     normalized_cost = total_cost / norm # normalize by the number of old regimes
     return normalized_cost
