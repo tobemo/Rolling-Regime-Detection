@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
+from hmmlearn import hmm
 
 
 def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
@@ -230,3 +231,16 @@ class MyHMM(ABC):
             np.array_equal(self.mapping, other.mapping)
         )
 
+    def aic(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray:
+        return hmm.BaseHMM.aic(self, X, lengths)
+
+    def bic(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray:
+        return hmm.BaseHMM.bic(self, X, lengths)
