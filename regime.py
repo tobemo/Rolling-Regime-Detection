@@ -213,7 +213,7 @@ class RegimeClassifier():
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
-        model_previous = self.model
+        previous_model = self.model
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = copy_model(
@@ -223,75 +223,70 @@ class RegimeClassifier():
 
         # model 3: transfer learn but add one extra regime
         new_model_with_added_regime = copy_model(
-            old_model=model_previous,
-            n_components = model_previous.n_components + 1
+            old_model=previous_model,
+            n_components = previous_model.n_components + 1
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
-        # regimes for all three models on all known data
-        regimes_previous = model_previous.predict(X)
-        regimes_new = new_model.predict(X)
-        regimes_new_added_regime = new_model_with_added_regime.predict(X)
-
-        # transition costs for both new models
-        transition_cost_matrix_current_regimes = get_transition_cost_matrix(
-            old_regimes=regimes_previous,
-            new_regimes=regimes_new,
-            n_old_regimes=model_previous.n_components,
-            n_new_regimes=new_model.n_components,
-            data=X,
+        # score
+        bic_prev = previous_model.bic(X, lengths=lengths)
+        bic_new = new_model.bic(X, lengths=lengths)
+        bic_new_with_added_regime = new_model_with_added_regime.bic(
+            X, lengths=lengths
         )
-        transition_cost_matrix_added_regime = get_transition_cost_matrix(
-            old_regimes=regimes_previous,
-            new_regimes=regimes_new_added_regime,
-            n_old_regimes=model_previous.n_components,
-            n_new_regimes=new_model_with_added_regime.n_components,
-            data=X,
-        )
-
-        # store costs in model objects themselves
-        new_model.transition_cost = calculate_total_cost(
-            transition_cost_matrix_current_regimes,
-            norm=model_previous.n_components,
-        )
-        new_model_with_added_regime.transition_cost = calculate_total_cost(
-            transition_cost_matrix_added_regime,
-            norm=model_previous.n_components,
-        )
-
-        # store mapping from previous to current regime 
-        # in model objects themselves
-        new_model.mapping = get_regime_map(
-            transition_cost_matrix_current_regimes
-        )
-        mapping = get_regime_map(
-            transition_cost_matrix_added_regime
-        )
-        new_model_with_added_regime.mapping = add_extra_regime_to_map(mapping)
-
-        # logging
-        self.logger.debug(f"Cost as is: {new_model.transition_cost}")
+        # pair scores and models to two lists: [bic scores] [models]
+        score_model_pairs = zip([
+            (bic_prev, previous_model),
+            (bic_new, new_model),
+            (bic_new_with_added_regime, new_model_with_added_regime)
+        ])
+        # index [models] by where [bic scores] is smallest
+        _, best_model = min(zip(*score_model_pairs))
         self.logger.debug(
-            f"Cost with extra regime: {new_model_with_added_regime.transition_cost}"
-        )
-        self.logger.debug(f"Transition threshold: {self.transition_threshold}")
-        
-        # compare costs
-        cheapest_model = new_model
-        if new_regime_is_advised(
-            regime_cost=new_model.transition_cost,
-            added_regime_cost=new_model_with_added_regime.transition_cost,
-            threshold=self.transition_threshold,
-        ):
-            cheapest_model = new_model_with_added_regime
+            f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}.
+        ")
+        if best_model.n_components > previous_model.n_components:
             self.logger.info(
-                f"Upped from {self.n_components} to {cheapest_model.n_components} regimes."
+                f"Upped from {self.n_components} to {best_model.n_components} regimes."
             )
         else:
-            self.logger.info(f"Maintaining {cheapest_model.n_components} regimes.")
+            self.logger.info(
+                f"Maintaining {best_model.n_components} regimes."
+            )
+
+        if new_model_collapsed(
+            model_new=best_model,
+            model_old=previous_model,
+            X=X
+            ):
+            best_model = previous_model
+            self.logger.warning(
+                f"Newest model is collapsed, reverting back to previous model."
+            )
+        
+        # transition costs from previous labels to new labels
+        transition_cost_matrix = get_transition_cost_matrix(
+            old_regimes=previous_model.predict(X),
+            new_regimes=best_model.predict(X),
+            n_old_regimes=previous_model.n_components,
+            n_new_regimes=best_model.n_components,
+            data=X,
+        )
+
+        # mapping of old to new labels
+        mapping = get_regime_map(transition_cost_matrix)
+        if mapping.shape[0] < best_model.n_components:
+            mapping = add_extra_regime_to_map(mapping)
+        best_model.mapping = mapping
+
+        # store total cost in model objects themselves
+        new_model.transition_cost = calculate_total_cost(
+            transition_cost_matrix,
+            norm=previous_model.n_components,
+        )
                 
-        # store cheapest model
-        self.model = cheapest_model
+        # store best model
+        self.model = best_model
     
     def predict(
             self,
@@ -594,4 +589,10 @@ def new_regime_is_advised(
         threshold=threshold,
     )
     return cond
+
+
+def new_model_collapsed(model_old, model_new, X):
+    """New model emits less regimes than old one."""
+    return len(np.unique(model_new.predict(X))) < \
+        len(np.unique(model_old.predict(X)))
 
