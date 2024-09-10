@@ -124,6 +124,15 @@ class MyHMM(ABC):
             [predictions == i for i in self.mapping[:,0]],
             self.mapping[:,1]
         )
+    
+    def _predict(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray:
+        """Find most likely state sequence corresponding to ``X``. Without mapping."""
+        assert self.is_fitted, "Model is not fitted."
+        return super().predict(X, lengths=lengths)
 
     def predict(
             self,
@@ -131,7 +140,7 @@ class MyHMM(ABC):
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to ``X``. States are mapped using self.mapper."""
-        predictions = super().predict(X, lengths=lengths)
+        predictions = self._predict(X, lengths)
         predictions = self.map_predictions(predictions)
         return predictions
     
@@ -142,6 +151,7 @@ class MyHMM(ABC):
         ) -> np.ndarray:
         if hasattr(self, '_mapping'):
             raise NotImplementedError("Using predict_proba while having a mapper set is not supported.")
+        assert self.is_fitted, "Model is not fitted."
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
         return probas[:, reordering]
