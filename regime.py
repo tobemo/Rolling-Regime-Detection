@@ -218,16 +218,13 @@ class RegimeClassifier():
         # model 2: transfer learn with same number of regimes as previous
         new_model = copy_model(
             old_model=self.model,
-            config=self.last_model_config,
         )
         new_model.fit(X, lengths=lengths)
 
         # model 3: transfer learn but add one extra regime
-        config = self.last_model_config
-        config['n_components'] += 1
         new_model_with_added_regime = copy_model(
             old_model=model_previous,
-            config=config,
+            n_components = model_previous.n_components + 1
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
@@ -438,13 +435,15 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
 
 def copy_model(
         old_model: MyHMM,
-        config: dict,
+        n_components: int = None,
         ) -> MyHMM:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over.
-    If `n_component in config` is greater than `old_model.n_component` then one or more regimes are added."""
+    If `n_component` is greater than `old_model.n_component` then one or more regimes are added."""
+    config = old_model.init_config
+    config['n_components'] = n_components or config['n_components']
     
     n_components = config['n_components']
-    n_component_difference = config['n_components'] - old_model.n_components
+    n_component_difference = n_components - old_model.n_components
     if n_component_difference < 0:
         raise NotImplementedError("A reduction in the number of regimes is not supported.")
     
