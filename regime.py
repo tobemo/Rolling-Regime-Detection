@@ -522,6 +522,7 @@ def get_transition_cost_matrix(
 
 def get_regime_map(cost_matrix: np.ndarray) -> np.ndarray:
     """Find the cheapest match of row to columns."""
+    cost_matrix = cost_matrix.clip(max=np.finfo(cost_matrix.dtype).max)
     idx = optimize.linear_sum_assignment(cost_matrix)
     return np.stack(idx).T
 
