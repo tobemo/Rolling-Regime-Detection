@@ -42,7 +42,7 @@ class MyHMM(ABC):
         self._transition_cost = cost
 
     timestamp: int
-    """Creation time."""
+    """Fit time."""
 
     _mapping: np.ndarray
     @property
@@ -116,6 +116,7 @@ class MyHMM(ABC):
             lengths: Optional[list[int]] = None,
             k: int = 5,
         ):
+        self.timestamp = int(time.time())
         if self.random_state:
             return super().fit(X, lengths)
         return self._multi_fit(X, lengths, k)
