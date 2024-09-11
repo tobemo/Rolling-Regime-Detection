@@ -72,7 +72,7 @@ class RegimeClassifier():
         """Store new model into model list."""
         self.models.append(model)
         self.logger.info(
-            f"Tracking {len(self.models)}/{self.models.maxlen} HMM's."
+            f"Tracking [{len(self.models)}/{self.models.maxlen}] HMM's."
         )
     
     def __getitem__(self, i: int) -> MyHMM:
@@ -470,6 +470,7 @@ def transfer_model(
     
     new_model.startprob_ = startprob_
     new_model.transmat_ = transmat_
+    new_model.random_state = None
     return new_model
 
 
