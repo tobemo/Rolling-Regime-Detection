@@ -123,8 +123,8 @@ class MyHMM(ABC):
     
     def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
         return np.select(
-            [predictions == i for i in self.mapping[:,0]],
-            self.mapping[:,1]
+            [predictions == i for i in self.mapping[:,1]],
+            self.mapping[:,0]
         )
     
     def _predict(
