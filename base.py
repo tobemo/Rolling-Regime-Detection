@@ -96,8 +96,8 @@ class MyHMM(ABC):
         score = -np.inf
         model = None
         config = self.HMM_config
-        for seed in range(k):
-            config['random_state'] = seed
+        for _ in range(k):
+            config['random_state'] = np.random.randint(1e6)
             _model = self.HMM(**config)
             _model.fit(X, lengths)
             _score = _model.score(X)
@@ -107,7 +107,6 @@ class MyHMM(ABC):
         
         model = model or _model
         self.__dict__.update(model.__dict__)
-
         return self
         
     def fit(
