@@ -1,6 +1,6 @@
 import pytest
 from my_vhmm import MyVariationalGaussianHMM
-from regime import get_transition_cost_matrix, match_regimes, calculate_total_cost
+from regime import get_transition_cost_matrix, get_regime_map, calculate_total_cost
 
 import numpy as np
 
@@ -11,24 +11,20 @@ n_samples_per_regime = [300, 100, 100, 100]
 
 @pytest.fixture
 def X() -> np.ndarray:
-    means = [
-        np.array([0.0, 0.0]),    # Mean of regime 1
-        np.array([5.0, 5.0]),    # Mean of regime 2
-        np.array([10.0, 10.0]),   # Mean of regime 3
-        np.array([2.0, 20.0])    # Mean of regime 4
-    ]
+    means = [0, 5, 10, 5, 30]
 
     covariances = [
-        np.array([[1.0, 0.2], [0.2, 1.0]]),   # Covariance of regime 1
-        np.array([[1.5, -0.4], [-0.4, 1.0]]), # Covariance of regime 2
-        np.array([[0.8, 0.3], [0.3, 1.2]]),   # Covariance of regime 3
-        np.array([[1.0, 0.0], [0.0, 1.5]])    # Covariance of regime 4
+        np.array([1.0]),   # Covariance of regime 1
+        np.array([0.2]),   # Covariance of regime 2
+        np.array([0.8]),   # Covariance of regime 3
+        np.array([0.2]),   # Covariance of regime 2
+        np.array([1.0]),   # Covariance of regime 4
     ]
-    X = np.vstack([
-            np.random.multivariate_normal(m, c, n)
-            for m, c, n in zip(means, covariances, n_samples_per_regime)
+    Xs = np.concatenate([
+        np.random.normal(m, size=n)
+        for m, c, n in zip(means, covariances, n_samples_per_regime)
     ])
-    return X
+    return Xs[:, None]
 
 @pytest.fixture
 def Xs(X) -> list[np.ndarray]:
@@ -73,7 +69,7 @@ def test_map(model_0, Xs, Zs):
             n_new_regimes=model_1.n_components,
             data=X
         )
-        mapping = match_regimes(tcm)
+        mapping = get_regime_map(tcm)
         if mapping[0][0] != mapping[0][1]:
             break
     
@@ -101,7 +97,7 @@ def test_mapping_long_term(model_0, Xs):
             data=X
         )
 
-        model_b.mapping = match_regimes(tcm)
+        model_b.mapping = get_regime_map(tcm)
         model_a = model_b
     
     # TODO: I don't think mapping holds true over time
@@ -114,7 +110,7 @@ def test_mapping_long_term(model_0, Xs):
         n_new_regimes=model_a.n_components,
         data=X
     )
-    mapping = match_regimes(tcm)
+    mapping = get_regime_map(tcm)
     pass
 
 
@@ -135,7 +131,7 @@ def train_model(n_components: int, X: np.ndarray) -> MyVariationalGaussianHMM:
 
 
 def test_increasing_regime(model_0, Xs):
-    X_3_regimes = Xs[2]
+    X_3_regimes = Xs[1]
     model_2_regimes = train_model(
         n_components=model_0.n_components,
         X=X_3_regimes,
