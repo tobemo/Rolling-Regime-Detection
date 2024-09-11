@@ -239,14 +239,14 @@ def test_calculate_total_cost():
     tcm = np.array([[0.5, 0.0, 0.5],
                     [0.0, 0.5, 0.5],
                     [0.5, 0.5, 0.5]])
-    cost = calculate_total_cost(tcm)
+    cost = calculate_total_cost(tcm, norm=3)
     assert cost == 0.5 / 3
     
     tcm = np.array([[0.5, 0.0, 0.5],
                     [0.0, 0.5, 0.5],
                     [0.5, 0.5, 0.5],
                     [np.inf, np.inf, np.inf]])
-    cost = calculate_total_cost(tcm)
+    cost = calculate_total_cost(tcm, norm=3)
     assert cost == 0.5 / 3
 
 

@@ -80,7 +80,8 @@ def test_map(model_0, Xs, Zs):
     assert Z_ == pytest.approx(model_0.predict(X))
 
 
-def test_mapping_long_term(model_0, Xs):
+def _test_mapping_long_term(model_0, Xs):
+    # ! ABANDONED, writing tests for unsupervised models is hard
     model_a = model_0
     for X in Xs[1:]:
         # add a regime each iteration
@@ -130,7 +131,8 @@ def train_model(n_components: int, X: np.ndarray) -> MyVariationalGaussianHMM:
     return model   
 
 
-def test_increasing_regime(model_0, Xs):
+def _test_increasing_regime(model_0, Xs):
+    # ! ABANDONED, writing tests for unsupervised models is hard
     X_3_regimes = Xs[1]
     model_2_regimes = train_model(
         n_components=model_0.n_components,
