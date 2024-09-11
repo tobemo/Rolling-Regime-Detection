@@ -237,24 +237,24 @@ class RegimeClassifier():
         )
 
         # determine best model
-        best_model = new_model
-        if bic_new_with_added_regime < bic_new:
-            best_model = new_model_with_added_regime
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
             best_model = previous_model
+            self.logger.info("Reusing previous model.")
+        elif bic_new_with_added_regime < bic_new:
+            best_model = new_model_with_added_regime
+            self.logger.info(
+                f"Upped from {self.n_components} to {best_model.n_components} regimes."
+            )
+        else:
+            best_model = new_model
+            self.logger.info(
+                f"Maintaining {best_model.n_components} regimes."
+            )
     
         # log
         self.logger.debug(
             f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
         )
-        if best_model.n_components > previous_model.n_components:
-            self.logger.info(
-                f"Upped from {self.n_components} to {best_model.n_components} regimes."
-            )
-        else:
-            self.logger.info(
-                f"Maintaining {best_model.n_components} regimes."
-            )
 
         # check for collapse
         if new_model_collapsed(
