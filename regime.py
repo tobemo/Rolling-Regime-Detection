@@ -214,7 +214,7 @@ class RegimeClassifier():
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
-        previous_model = copy_model(self.model)
+        previous_model = copy_model(self.model, reset_map=True)
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
@@ -241,7 +241,7 @@ class RegimeClassifier():
         if bic_new_with_added_regime < bic_new:
             best_model = new_model_with_added_regime
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
-            best_model = copy_model(previous_model)
+            best_model = previous_model
     
         # log
         self.logger.debug(
