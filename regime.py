@@ -213,16 +213,16 @@ class RegimeClassifier():
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
-        previous_model = self.model
+        previous_model = copy_model(self.model)
 
         # model 2: transfer learn with same number of regimes as previous
-        new_model = copy_model(
+        new_model = transfer_model(
             old_model=self.model,
         )
         new_model.fit(X, lengths=lengths)
 
         # model 3: transfer learn but add one extra regime
-        new_model_with_added_regime = copy_model(
+        new_model_with_added_regime = transfer_model(
             old_model=previous_model,
             n_components = previous_model.n_components + 1
         )
@@ -234,17 +234,18 @@ class RegimeClassifier():
         bic_new_with_added_regime = new_model_with_added_regime.bic(
             X, lengths=lengths
         )
-        # pair scores and models to two lists: [bic scores] [models]
-        score_model_pairs = zip([
-            (bic_prev, previous_model),
-            (bic_new, new_model),
-            (bic_new_with_added_regime, new_model_with_added_regime)
-        ])
-        # index [models] by where [bic scores] is smallest
-        _, best_model = min(zip(*score_model_pairs))
+
+        # determine best model
+        best_model = new_model
+        if bic_new_with_added_regime < bic_new:
+            best_model = new_model_with_added_regime
+        if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
+            best_model = copy_model(previous_model)
+    
+        # log
         self.logger.debug(
-            f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}.
-        ")
+            f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
+        )
         if best_model.n_components > previous_model.n_components:
             self.logger.info(
                 f"Upped from {self.n_components} to {best_model.n_components} regimes."
@@ -254,6 +255,7 @@ class RegimeClassifier():
                 f"Maintaining {best_model.n_components} regimes."
             )
 
+        # check for collapse
         if new_model_collapsed(
             model_new=best_model,
             model_old=previous_model,
@@ -428,7 +430,14 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
     return new_transmat
 
 
-def copy_model(
+def copy_model(model: MyHMM, reset_map: bool) -> MyHMM:
+    config = model.get_config()
+    new_model = type(model).from_config(config)
+    del new_model._mapping
+    return new_model
+
+
+def transfer_model(
         old_model: MyHMM,
         n_components: int = None,
         ) -> MyHMM:
