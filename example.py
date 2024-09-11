@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 
 from my_vhmm import MyVariationalGaussianHMM
 from plotting_utils import plot_multiple_with_regimes
-from regime import RegimeClassifier, extend_startprob, transfer_model
+from regime import RegimeClassifier
+
 
 logging.basicConfig(level=logging.DEBUG)
 from regime import RegimeClassifier
