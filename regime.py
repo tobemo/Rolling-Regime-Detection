@@ -158,6 +158,7 @@ class RegimeClassifier():
             regimes = [2, 3, 4, 5, 6, 7, 8, 9]
         elif isinstance(regimes, int):
             regimes = [regimes]
+        self.logger.debug(f"Running initial fit with regimes: {regimes}.")
 
         best_model = None
         best_silhouette_score = -1
@@ -188,6 +189,9 @@ class RegimeClassifier():
         if not best_model:
             raise RuntimeError('Failed to fit even one working model.')
         self.model = best_model
+        self.logger.info(
+            f"Initial fit found best number of regimes to be {self.model.n_components}"
+        )
 
     def fit(
             self,
