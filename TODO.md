@@ -60,5 +60,7 @@
             - [ ] mapping is constant over many models
         - [ ] new regime
         - [ ] regime disappearing?
-- [ ] handle cost matrix being infeasible when optimizing
-- [ ] ! train multiple models and use cheapest one
+- [x] handle cost matrix being infeasible
+    - an entire col being inf
+- [x] ! train multiple models and use cheapest one
+- [ ] silhouette vs bic
