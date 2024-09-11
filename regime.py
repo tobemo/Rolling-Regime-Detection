@@ -214,7 +214,7 @@ class RegimeClassifier():
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
-        previous_model = copy_model(self.model, reset_map=True)
+        previous_model = copy_model(self.model)
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
@@ -236,10 +236,16 @@ class RegimeClassifier():
             X, lengths=lengths
         )
 
+        # log
+        self.logger.debug(
+            f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
+        )
+
         # determine best model
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
-            best_model = previous_model
+            self.model = previous_model
             self.logger.info("Reusing previous model.")
+            return # nothing more is needed
         elif bic_new_with_added_regime < bic_new:
             best_model = new_model_with_added_regime
             self.logger.info(
@@ -251,11 +257,6 @@ class RegimeClassifier():
                 f"Maintaining {best_model.n_components} regimes."
             )
     
-        # log
-        self.logger.debug(
-            f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
-        )
-
         # check for collapse
         if new_model_collapsed(
             model_new=best_model,
@@ -431,10 +432,9 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
     return new_transmat
 
 
-def copy_model(model: MyHMM, reset_map: bool) -> MyHMM:
+def copy_model(model: MyHMM) -> MyHMM:
     config = model.get_config()
     new_model = type(model).from_config(config)
-    del new_model._mapping
     return new_model
 
 
