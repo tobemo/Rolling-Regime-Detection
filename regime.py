@@ -34,8 +34,8 @@ class RegimeClassifier():
     def __init__(
             self,
             n_components: int | list[int] = -1,
-            n_iter: int =100,
-            tol: float =1e-6,
+            n_iter: int = 100,
+            tol: float = 1e-6,
             verbose: bool = False,
             name: str = None
         ):
@@ -225,7 +225,7 @@ class RegimeClassifier():
         # model 3: transfer learn but add one extra regime
         new_model_with_added_regime = transfer_model(
             old_model=previous_model,
-            n_components = previous_model.n_components + 1
+            n_components = previous_model.n_components + 1,
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
@@ -246,6 +246,7 @@ class RegimeClassifier():
             self.model = previous_model
             self.logger.info("Reusing previous model.")
             return # nothing more is needed
+        
         elif bic_new_with_added_regime < bic_new:
             best_model = new_model_with_added_regime
             self.logger.info(
@@ -441,14 +442,17 @@ def copy_model(model: MyHMM) -> MyHMM:
 def transfer_model(
         old_model: MyHMM,
         n_components: int = None,
+        n_iter: int = None,
+        tol: float = None,
         ) -> MyHMM:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over.
     If `n_component` is greater than `old_model.n_component` then one or more regimes are added."""
     config = old_model.init_config
     config['n_components'] = n_components or config['n_components']
+    config['n_iter'] = n_iter or config['n_iter']
+    config['tol'] = tol or config['tol']
     
-    n_components = config['n_components']
-    n_component_difference = n_components - old_model.n_components
+    n_component_difference = config['n_components'] - old_model.n_components
     if n_component_difference < 0:
         raise NotImplementedError("A reduction in the number of regimes is not supported.")
     
