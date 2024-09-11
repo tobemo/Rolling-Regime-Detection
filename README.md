@@ -15,4 +15,8 @@ In summary, if model_1_a is equally 'bad' as model_0 at detecting a new regime, 
 ![](distance_metric_flaw.png)
 
 
-Conlcusion, as of 10/09/24, is to use cost solely for regime mapping, and aic&bic for model selection.
+Conclusion, as of 10/09/24, is to use cost solely for regime mapping, and aic&bic for model selection.
+
+
+---
+With the test data RegimeClassifier fails to perfectly capture all regimes, but as it makes sense when it doesn't I won't pursue this further.
