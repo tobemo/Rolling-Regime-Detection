@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 
 import numpy as np
 from hmmlearn.vhmm import VariationalGaussianHMM
@@ -35,7 +36,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     
     @property
     def HMM_config(self) -> dict:
-        return self._hmm_config
+        return deepcopy(self._hmm_config)
 
     def __init__(
             self,
