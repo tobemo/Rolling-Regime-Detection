@@ -82,6 +82,7 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
 
 
 def copy_model(model: MyHMM) -> MyHMM:
+    """Copy model as is."""
     config = model.get_config()
     new_model = type(model).from_config(config)
     return new_model
@@ -127,6 +128,7 @@ def transfer_model(
 
 
 def get_distance(u: np.ndarray, v: np.ndarray) -> float:
+    """Get Wassertsein distance between two distributions datasets."""
     if u.ndim == 2:
         return np.mean(
             [stats.wasserstein_distance(u[i], v[i]) for i in range(u.shape[1])]
