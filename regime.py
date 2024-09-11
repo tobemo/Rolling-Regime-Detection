@@ -36,7 +36,6 @@ class RegimeClassifier():
             n_components: int | list[int] = -1,
             n_iter: int =100,
             tol: float =1e-6,
-            random_state: float = None,
             verbose: bool = False,
             name: str = None
         ):
@@ -49,7 +48,6 @@ class RegimeClassifier():
             n_components=n_components,
             n_iter=n_iter,
             tol=tol,
-            random_state=random_state,
             verbose=verbose,
         )
         self._n_components = n_components
@@ -169,7 +167,6 @@ class RegimeClassifier():
             cfg = self.classifier_config
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
-            cfg['random_state'] = None
             sub_model = MyVariationalGaussianHMM(**cfg)
             sub_model.fit(X, lengths=lengths, k=k)
             
