@@ -63,4 +63,6 @@
 - [x] handle cost matrix being infeasible
     - an entire col being inf
 - [x] ! train multiple models and use cheapest one
-- [ ] silhouette vs bic
+- [x] silhouette vs bic
+    - bic tries to maximize number of regimes during initial fit
+    - changing from bic to silhouette min fit makes no difference
