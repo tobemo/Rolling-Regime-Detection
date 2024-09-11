@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, match_regimes, calculate_total_cost, new_regime_is_advised, added_regime_costs_less, old_regime_is_too_costly
+from regime import RegimeClassifier, extend_startprob, extend_transmat, get_transition_cost_matrix, get_regime_map, calculate_total_cost, new_regime_is_advised, added_regime_costs_less, old_regime_is_too_costly
 from my_vhmm import MyVariationalGaussianHMM
 import pytest
 
@@ -216,7 +216,7 @@ def test_match_regimes():
                  [1, 0.]])
     expected = np.array([[0, 0],
                          [1, 1]])
-    match = match_regimes(a)
+    match = get_regime_map(a)
     assert match == pytest.approx(expected)
 
     b = np.array([[0.5, 0.0, 0.5],
@@ -225,7 +225,7 @@ def test_match_regimes():
     expected = np.array([[0, 1],
                          [1, 0],
                          [2, 2]])
-    match = match_regimes(b)
+    match = get_regime_map(b)
     assert match == pytest.approx(expected)
 
 
