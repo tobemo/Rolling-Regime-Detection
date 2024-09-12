@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy import optimize, stats
 
 from base import MyHMM
@@ -137,11 +138,11 @@ def get_distance(u: np.ndarray, v: np.ndarray) -> float:
 
 
 def get_transition_cost_matrix(
-        old_regimes: np.ndarray,
-        new_regimes: np.ndarray,
+        old_regimes: np.ndarray | pd.Series,
+        new_regimes: np.ndarray | pd.Series,
         n_old_regimes: int,
         n_new_regimes: int,
-        data: np.ndarray,
+        data: np.ndarray | pd.Series,
     ) -> np.ndarray:
     """Returns cost matrix.
     The cost matrix describes the distance between each old and new distribution. The cost is defined as the distance between the distributions of the data first index by an old regime and then index by a new regime.
@@ -162,6 +163,10 @@ def get_transition_cost_matrix(
     """
     if n_new_regimes < n_old_regimes:
         raise ValueError(f"n_new_regimes is expected to be greater than n_old_regimes but is {n_new_regimes} < {n_old_regimes}.")
+    
+    old_regimes = old_regimes.to_numpy() if isinstance(old_regimes, pd.Series) else old_regimes
+    new_regimes = new_regimes.to_numpy() if isinstance(new_regimes, pd.Series) else new_regimes
+    data = data.to_numpy() if isinstance(data, pd.Series) else data
     
     costs = np.full(
         (n_old_regimes, n_new_regimes),
