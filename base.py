@@ -146,7 +146,7 @@ class MyHMM(ABC):
         assert self.is_fitted, "Model is not fitted."
         predictions = super().predict(X, lengths=lengths)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.Series(predictions, index=X.index)
+            predictions = pd.Series(predictions, index=X.index, name='Regime')
         return predictions
 
     def predict(
@@ -161,7 +161,7 @@ class MyHMM(ABC):
             predictions = predictions.to_numpy()
         predictions = self.map_predictions(predictions)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.Series(predictions, index=X.index)
+            predictions = pd.Series(predictions, index=X.index, name='Regime')
         return predictions
     
     def fit_predict(
