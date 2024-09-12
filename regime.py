@@ -6,6 +6,7 @@ from logging import Logger, getLogger
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import silhouette_score
 
 from base import MyHMM
@@ -144,7 +145,7 @@ class RegimeClassifier():
 
     def initial_fit(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None,
             k: int = 10
         ) -> None:
@@ -196,7 +197,7 @@ class RegimeClassifier():
 
     def fit(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> None:
         """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, compared to the previous regime classifier, is used.
@@ -297,26 +298,26 @@ class RegimeClassifier():
     
     def predict(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.DataFrame:
         """Find most likely state sequence corresponding to X of the last trained model."""
         return self.model.predict(X, lengths=lengths)
     
     def fit_predict(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.DataFrame:
         """Chains `fit` and `predict`."""
         self.fit(X, lengths=lengths)
         return self.predict(X, lengths=lengths)
     
     def predict_proba(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.DataFrame:
         """Compute the posterior probability for each state of the last trained model."""
         return self.model.predict_proba(X, lengths=lengths)
 
