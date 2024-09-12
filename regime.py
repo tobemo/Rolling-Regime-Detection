@@ -334,8 +334,18 @@ class RegimeClassifier():
         predictions = {i: p for i, p in enumerate(predictions)}
         predictions = pd.DataFrame(predictions)
         predictions.columns.name = 'Model'
-        return predictions
 
+        ends = [
+            pd.Timestamp(model.timestamp, unit='s', tz=X.index.tz)
+            for model in self.models
+        ]
+        ends = X.index.get_indexer(ends)
+        assert ends.min() >= 0
+        ends += 1
+        for i, end in enumerate(ends):
+            predictions.iloc[end:, i] = None
+
+        return predictions
 
     @classmethod
     def from_jsons(cls, classifier_config: str, configs: list[str]):
