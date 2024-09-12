@@ -166,7 +166,7 @@ def get_transition_cost_matrix(
     
     old_regimes = old_regimes.to_numpy() if isinstance(old_regimes, pd.Series) else old_regimes
     new_regimes = new_regimes.to_numpy() if isinstance(new_regimes, pd.Series) else new_regimes
-    data = data.to_numpy() if isinstance(data, pd.Series) else data
+    data = data.to_numpy() if isinstance(data, pd.DataFrame) else data
     
     costs = np.full(
         (n_old_regimes, n_new_regimes),
