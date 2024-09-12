@@ -270,11 +270,13 @@ class MyHMM(ABC):
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        return hmm.BaseHMM.aic(self, X.to_numpy(), lengths)
+        X = X.to_numpy() if isinstance(X, pd.DataFrame) else X
+        return hmm.BaseHMM.aic(self, X, lengths)
 
     def bic(
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        return hmm.BaseHMM.bic(self, X.to_numpy(), lengths)
+        X = X.to_numpy() if isinstance(X, pd.DataFrame) else X
+        return hmm.BaseHMM.bic(self, X, lengths)
