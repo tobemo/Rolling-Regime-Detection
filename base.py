@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 from hmmlearn import hmm
 
 
@@ -89,7 +90,7 @@ class MyHMM(ABC):
         self._transition_cost = np.inf
     
     def _multi_fit(self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]] = None,
             k: int = 5,
         ):
@@ -111,15 +112,21 @@ class MyHMM(ABC):
         
     def fit(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]] = None,
             k: int = 5,
         ):
         """Estimate model parameters."""
-        self.timestamp = int(time.time())
         if self.random_state:
-            return super().fit(X, lengths)
-        return self._multi_fit(X, lengths, k)
+            super().fit(X, lengths)
+        else:
+            self._multi_fit(X, lengths, k)
+    
+        self.timestamp = int(time.time())
+        if isinstance(X, pd.DataFrame) and isinstance(X.index,pd.DatetimeIndex):
+            self.timestamp = int(X.index[-1].timestamp())
+
+        return self
     
     def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
         """Map predictions using `self.mapping`.
@@ -131,28 +138,35 @@ class MyHMM(ABC):
     
     def _predict(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to ``X``.
         This call is without mapping, under the hood it just calls the original predict method.."""
         assert self.is_fitted, "Model is not fitted."
-        return super().predict(X, lengths=lengths)
+        predictions = super().predict(X, lengths=lengths)
+        if isinstance(X, pd.DataFrame):
+            predictions = pd.DataFrame(predictions, index=X.index)
+        return predictions
 
     def predict(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to ``X``.
         States are mapped using self.mapper."""
         predictions = self._predict(X, lengths)
+        if isinstance(predictions, pd.DataFrame):
+            predictions = predictions.to_numpy()
         predictions = self.map_predictions(predictions)
+        if isinstance(X, pd.DataFrame):
+            predictions = pd.DataFrame(predictions, index=X.index)
         return predictions
     
     def fit_predict(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Estimate model parameters, then find most likely state sequence."""
@@ -161,7 +175,7 @@ class MyHMM(ABC):
     
     def predict_proba(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Compute the posterior probability for each state in the model."""
@@ -172,7 +186,10 @@ class MyHMM(ABC):
         assert self.is_fitted, "Model is not fitted."
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
-        return probas[:, reordering]
+        probas = probas[:, reordering]
+        if isinstance(X, pd.DataFrame):
+            probas = pd.DataFrame(probas, index=X.index)
+        return probas
 
     @property
     def init_config(self) -> dict:
@@ -250,14 +267,14 @@ class MyHMM(ABC):
 
     def aic(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        return hmm.BaseHMM.aic(self, X, lengths)
+        return hmm.BaseHMM.aic(self, X.to_numpy(), lengths)
 
     def bic(
             self,
-            X: np.ndarray,
+            X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        return hmm.BaseHMM.bic(self, X, lengths)
+        return hmm.BaseHMM.bic(self, X.to_numpy(), lengths)
