@@ -115,12 +115,15 @@ class MyHMM(ABC):
             lengths: Optional[list[int]] = None,
             k: int = 5,
         ):
+        """Estimate model parameters."""
         self.timestamp = int(time.time())
         if self.random_state:
             return super().fit(X, lengths)
         return self._multi_fit(X, lengths, k)
     
     def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
+        """Map predictions using `self.mapping`.
+        Values in predictions that equal the second column of mapping are replaced by the respective value in the first column of mapping."""
         return np.select(
             [predictions == i for i in self.mapping[:,1]],
             self.mapping[:,0]
@@ -131,7 +134,8 @@ class MyHMM(ABC):
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        """Find most likely state sequence corresponding to ``X``. Without mapping."""
+        """Find most likely state sequence corresponding to ``X``.
+        This call is without mapping, under the hood it just calls the original predict method.."""
         assert self.is_fitted, "Model is not fitted."
         return super().predict(X, lengths=lengths)
 
@@ -140,18 +144,31 @@ class MyHMM(ABC):
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
-        """Find most likely state sequence corresponding to ``X``. States are mapped using self.mapper."""
+        """Find most likely state sequence corresponding to ``X``.
+        States are mapped using self.mapper."""
         predictions = self._predict(X, lengths)
         predictions = self.map_predictions(predictions)
         return predictions
+    
+    def fit_predict(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray:
+        """Estimate model parameters, then find most likely state sequence."""
+        self.fit(X, lengths=lengths)
+        return self.predict(X, lengths=lengths)
     
     def predict_proba(
             self,
             X: np.ndarray,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
+        """Compute the posterior probability for each state in the model."""
         if hasattr(self, '_mapping'):
-            raise NotImplementedError("Using predict_proba while having a mapper set is not supported.")
+            raise NotImplementedError(
+                "Using predict_proba while having a mapper set is not supported."
+            )
         assert self.is_fitted, "Model is not fitted."
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]

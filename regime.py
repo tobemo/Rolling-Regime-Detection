@@ -293,6 +293,7 @@ class RegimeClassifier():
                 
         # store best model
         self.model = best_model
+        return self
     
     def predict(
             self,
@@ -300,7 +301,16 @@ class RegimeClassifier():
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Find most likely state sequence corresponding to X of the last trained model."""
-        self.model.predict(X, lengths=lengths)
+        return self.model.predict(X, lengths=lengths)
+    
+    def fit_predict(
+            self,
+            X: np.ndarray,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray:
+        """Chains `fit` and `predict`."""
+        self.fit(X, lengths=lengths)
+        return self.predict(X, lengths=lengths)
     
     def predict_proba(
             self,
@@ -308,7 +318,7 @@ class RegimeClassifier():
             lengths: Optional[list[int]]=None
         ) -> np.ndarray:
         """Compute the posterior probability for each state of the last trained model."""
-        self.model.predict_proba(X, lengths=lengths)
+        return self.model.predict_proba(X, lengths=lengths)
 
     @classmethod
     def from_jsons(cls, classifier_config: str, configs: list[str]):
