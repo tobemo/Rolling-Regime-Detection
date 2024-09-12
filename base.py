@@ -140,35 +140,35 @@ class MyHMM(ABC):
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.Series:
         """Find most likely state sequence corresponding to ``X``.
         This call is without mapping, under the hood it just calls the original predict method.."""
         assert self.is_fitted, "Model is not fitted."
         predictions = super().predict(X, lengths=lengths)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.DataFrame(predictions, index=X.index)
+            predictions = pd.Series(predictions, index=X.index)
         return predictions
 
     def predict(
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.Series:
         """Find most likely state sequence corresponding to ``X``.
         States are mapped using self.mapper."""
         predictions = self._predict(X, lengths)
-        if isinstance(predictions, pd.DataFrame):
+        if isinstance(predictions, pd.Series):
             predictions = predictions.to_numpy()
         predictions = self.map_predictions(predictions)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.DataFrame(predictions, index=X.index)
+            predictions = pd.Series(predictions, index=X.index)
         return predictions
     
     def fit_predict(
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.Series:
         """Estimate model parameters, then find most likely state sequence."""
         self.fit(X, lengths=lengths)
         return self.predict(X, lengths=lengths)
@@ -177,7 +177,7 @@ class MyHMM(ABC):
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
-        ) -> np.ndarray:
+        ) -> np.ndarray | pd.DataFrame:
         """Compute the posterior probability for each state in the model."""
         if hasattr(self, '_mapping'):
             raise NotImplementedError(
