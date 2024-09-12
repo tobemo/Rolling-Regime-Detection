@@ -320,6 +320,22 @@ class RegimeClassifier():
         ) -> np.ndarray | pd.DataFrame:
         """Compute the posterior probability for each state of the last trained model."""
         return self.model.predict_proba(X, lengths=lengths)
+    
+    def predict_all(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray | pd.DataFrame:
+        """row: time, col: model"""
+        predictions = [model.predict(X) for model in self.models]
+        if isinstance(X, np.ndarray):
+            return np.stack(predictions).T
+        
+        predictions = {i: p for i, p in enumerate(predictions)}
+        predictions = pd.DataFrame(predictions)
+        predictions.columns.name = 'Model'
+        return predictions
+
 
     @classmethod
     def from_jsons(cls, classifier_config: str, configs: list[str]):
