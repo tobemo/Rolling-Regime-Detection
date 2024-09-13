@@ -55,7 +55,7 @@ def plot_with_regimes(y, regimes, regime_colors=None, line_color='black', title=
     return ax
 
 
-def plot_multiple_with_regimes(Xs: list, Zs: list, regime_colors: dict):
+def plot_multiple_with_regimes(Xs: list, Zs: list, regime_colors: dict = None):
     n_rows = len(Xs)
     assert len(Xs) == len(Zs)
     fig, ax = plt.subplots(nrows=n_rows, sharex=True)
@@ -68,7 +68,7 @@ def plot_multiple_with_regimes(Xs: list, Zs: list, regime_colors: dict):
 
 
 def plot_parallel_multiple_with_regimes(
-        Xs: list, Zs_a: list, Zs_b: list, regime_colors: dict
+        Xs: list, Zs_a: list, Zs_b: list, regime_colors: dict = None,
     ):
     n_rows = len(Xs)
     n_cols = 2
