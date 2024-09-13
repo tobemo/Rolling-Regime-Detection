@@ -66,3 +66,13 @@
 - [x] silhouette vs bic
     - bic tries to maximize number of regimes during initial fit
     - changing from bic to silhouette min fit makes no difference
+- [ ] scores over time
+        - [ ] bic
+        - [ ] aic
+        - [ ] silhouette
+- [ ] should really be indexed on last saturday of month
+- [ ] serialize all instruments for M20
+    - do other ones later one
+    - ~2 hours per
+- [ ] tests for time index
+- [ ] test for predict all
