@@ -330,6 +330,8 @@ class RegimeClassifier():
         predictions = [model.predict(X) for model in self.models]
         if isinstance(X, np.ndarray):
             return np.stack(predictions).T
+        elif not isinstance(X.index, pd.DatetimeIndex):
+            return pd.DataFrame(np.stack(predictions).T)
         
         predictions = {i: p for i, p in enumerate(predictions)}
         predictions = pd.DataFrame(predictions)
