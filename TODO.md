@@ -70,9 +70,9 @@
         - [ ] bic
         - [ ] aic
         - [ ] silhouette
-- [ ] should really be indexed on last saturday of month
 - [ ] serialize all instruments for M20
+    - [ ] should really be indexed on last saturday of month
     - do other ones later one
     - ~2 hours per
-- [ ] tests for time index
-- [ ] test for predict all
+- [x] tests for time index
+- [x] test for predict all

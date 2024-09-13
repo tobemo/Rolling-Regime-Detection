@@ -178,9 +178,25 @@ def test_predict_all(rc_fitted):
             end=pd.Timestamp.now(), freq='D', periods=len(X)
         ),
     )
+    
+    # test index
     rc_fitted.models[0].timestamp = X_.index[2]
-    rc_fitted.models[1].timestamp = X_.index[-2]
-    rc_fitted.predict_all(X_)
+    rc_fitted.models[1].timestamp = X_.index[-3]
+    y = rc_fitted.predict_all(X_)
+    pd.testing.assert_index_equal(y.index, X_.index)
+    
+    # test nans (negative space)
+    y_ = (y*0.).to_numpy() # discard regime info
+    expected = np.zeros((len(X), 2)) # 2 models
+    expected[2+1:, 0] = None
+    expected[-(3-1):, 1] = None
+    np.testing.assert_equal(y_, expected)
+    
+    # test regime values
+    y0 = rc_fitted.models[0].predict(X_).to_numpy()
+    assert y0[:3] == pytest.approx(y.to_numpy()[:3,0])
+    y1 = rc_fitted.models[1].predict(X_).to_numpy()
+    assert y1[:-3] == pytest.approx(y.to_numpy()[:-3,1])
 
 
 def test_equality(rc_fitted, rc):
