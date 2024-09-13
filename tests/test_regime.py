@@ -18,6 +18,7 @@ X = np.array([
     18, 14, 10, 15, 8, 15, 6, 11, 8, 7, 18, 16, 13, 12, 13, 20,
     15, 16, 12, 18, 15, 16, 13, 15, 16, 11, 11
 ])
+ts = pd.date_range(end=pd.Timestamp.now(), freq='D', periods=len(X))
 
 
 @pytest.fixture
@@ -142,23 +143,43 @@ def test_transition_threshold(rc, rc_populated):
 
 
 def test_fit():
+    # np
     rc = RegimeClassifier(n_components=2, n_iter=5)
     rc.fit(X[:50, None])
     rc.fit(X[:, None])
-
+    # pd
+    rc = RegimeClassifier(n_components=2, n_iter=5)
     X_ = pd.DataFrame(X)
+    rc.fit(X_)
+    # pd with datetime index
+    rc = RegimeClassifier(n_components=2, n_iter=5)
+    X_ = pd.DataFrame(X, index=ts)
     rc.fit(X_)
 
 
 def test_predict(rc_fitted):
+    # np
     rc_fitted.predict(X[:, None])
-
+    # pd
     X_ = pd.DataFrame(X)
+    rc_fitted.predict(X_)
+    # pd with datetime index
+    X_ = pd.DataFrame(X, index=ts)
     rc_fitted.predict(X_)
 
 
 def test_predict_all(rc_fitted):
     X_ = pd.DataFrame(X)
+    rc_fitted.predict_all(X_)
+    
+    X_ = pd.DataFrame(
+        X,
+        index=pd.date_range(
+            end=pd.Timestamp.now(), freq='D', periods=len(X)
+        ),
+    )
+    rc_fitted.models[0].timestamp = X_.index[2]
+    rc_fitted.models[1].timestamp = X_.index[-2]
     rc_fitted.predict_all(X_)
 
 
