@@ -150,6 +150,18 @@ def test_fit():
     rc.fit(X_)
 
 
+def test_predict(rc_fitted):
+    rc_fitted.predict(X[:, None])
+
+    X_ = pd.DataFrame(X)
+    rc_fitted.predict(X_)
+
+
+def test_predict_all(rc_fitted):
+    X_ = pd.DataFrame(X)
+    rc_fitted.predict_all(X_)
+
+
 def test_equality(rc_fitted, rc):
     assert rc_fitted == rc_fitted
     assert not rc_fitted == rc
