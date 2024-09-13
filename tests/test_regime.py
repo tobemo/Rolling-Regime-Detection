@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from my_vhmm import MyVariationalGaussianHMM
@@ -144,6 +145,9 @@ def test_fit():
     rc = RegimeClassifier(n_components=2, n_iter=5)
     rc.fit(X[:50, None])
     rc.fit(X[:, None])
+
+    X_ = pd.DataFrame(X)
+    rc.fit(X_)
 
 
 def test_equality(rc_fitted, rc):
