@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from hmmlearn import hmm
 from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
 
 
 def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
@@ -282,16 +283,16 @@ class MyHMM(ABC):
         X = X.to_numpy() if isinstance(X, pd.DataFrame) else X
         return hmm.BaseHMM.bic(self, X, lengths)
 
-    def scatter_1D(
-        self,
+    @staticmethod
+    def _scatter_1D(
         X: np.ndarray | pd.DataFrame,
-        lengths: Optional[list[int]]=None
-    ) -> plt.Axes:
-        Z = self.predict(X)
+        Z: np.ndarray | pd.DataFrame
+        ) -> plt.Axes:
+        """Plots regime data over time plus a violin plot."""
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X)
             Z = pd.DataFrame(Z)
-        
+
         fig, ax = plt.subplots(
             ncols=2,
             sharey=True,
@@ -307,19 +308,26 @@ class MyHMM(ABC):
             pc.set_alpha(1)
         ax[1].scatter([1]*len(X), X, c=Z, cmap='rocket')
         ax[1].tick_params(
-            axis='x',
-            which='both',
-            bottom=False,
-            labelbottom=False,
+            axis='x', which='both',
+            bottom=False, labelbottom=False,
         )
         return ax
     
-    def scatter_2D(
+    def scatter_1D(
         self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
     ) -> plt.Axes:
+        """Emits regimes for X then plots regime data over time plus a violin plot."""
         Z = self.predict(X)
+        return self._scatter_1D(X=X, Z=Z)
+    
+    @staticmethod
+    def _scatter_2D(
+        X: np.ndarray | pd.DataFrame,
+        Z: np.ndarray | pd.DataFrame
+        ) -> plt.Axes:
+        """Plots a scatter plot plus a histogram."""
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X)
             Z = pd.DataFrame(Z)
@@ -340,13 +348,33 @@ class MyHMM(ABC):
         ax[1].yaxis.tick_right()
         return ax
 
+    def scatter_2D(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        """Emits regimes for X then plots a scatter plot plus a histogram."""
+        Z = self.predict(X)
+        return self._scatter_2D(X=X, Z=Z)
+
+    def scatter_nD(self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        """Emits regimes for X then reduces X, using t-SNE, and plots a scatter plot plus a histogram."""
+        Z = self.predict(X)
+        X_embedded = TSNE(n_components).fit_transform(X)
+        return self._scatter_2D(X=X_embedded, Z=Z)        
+
     def scatter(
         self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
     ) -> plt.Axes:
+        """Plot regime data."""
         if X.shape[1] == 1:
             return self.scatter_1D(X, lengths=lengths)
         elif X.shape[1] == 2:
             return self.scatter_2D(X, lengths=lengths)
-        raise NotImplementedError("Only 1D and 2D inputs are supported.")
+        else:
+            return self.scatter_nD(X, lengths=lengths)
