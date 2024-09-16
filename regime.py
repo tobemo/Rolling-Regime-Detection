@@ -429,3 +429,38 @@ class RegimeClassifier():
         
         return False
 
+    def scatter_1D(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        Z = self.predict(X)
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
+            Z = pd.DataFrame(Z)
+        
+        fig, ax = plt.subplots(ncols=2, sharey=True, width_ratios=[0.8, 0.2], gridspec_kw=dict(wspace=0))
+        ax[0].scatter(X.index, X, c=Z)
+
+        parts = ax[1].violinplot(X, showextrema=False, showmedians=False)
+        for pc in parts['bodies']:
+            pc.set_facecolor('grey')
+            pc.set_edgecolor('black')
+            pc.set_alpha(1)
+        ax[1].scatter([1]*len(X), X, c=Z)
+        ax[1].tick_params(
+            axis='x',
+            which='both',
+            bottom=False,
+            labelbottom=False,
+        )
+        return ax
+
+    def scatter(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        if df.shape[1] == 1:
+            return self.scatter_1D(X, lengths=lengths)
+    
