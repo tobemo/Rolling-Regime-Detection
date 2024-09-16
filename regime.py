@@ -434,7 +434,13 @@ class RegimeClassifier():
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
     ) -> plt.Axes:
-        return self.model.scatter_1D(X, lengths=lengths)
+        ax = self.model.scatter_1D(X, lengths=lengths)
+        plt.figtext(
+            0.99, 0.01,
+            'Using hindsight bias!',
+            horizontalalignment='right'
+        )
+        return ax
 
     def scatter(
         self,
