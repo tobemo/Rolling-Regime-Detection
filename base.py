@@ -1,12 +1,13 @@
-from copy import deepcopy
 import json
 import time
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 from hmmlearn import hmm
+from matplotlib import pyplot as plt
 
 
 def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
@@ -280,3 +281,44 @@ class MyHMM(ABC):
         ) -> np.ndarray:
         X = X.to_numpy() if isinstance(X, pd.DataFrame) else X
         return hmm.BaseHMM.bic(self, X, lengths)
+
+    def scatter_1D(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        Z = self.predict(X)
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
+            Z = pd.DataFrame(Z)
+        
+        fig, ax = plt.subplots(
+            ncols=2,
+            sharey=True,
+            width_ratios=[0.8, 0.2],
+            gridspec_kw=dict(wspace=0)
+        )
+        ax[0].scatter(X.index, X, c=Z)
+
+        parts = ax[1].violinplot(X, showextrema=False, showmedians=False)
+        for pc in parts['bodies']:
+            pc.set_facecolor('grey')
+            pc.set_edgecolor('black')
+            pc.set_alpha(1)
+        ax[1].scatter([1]*len(X), X, c=Z)
+        ax[1].tick_params(
+            axis='x',
+            which='both',
+            bottom=False,
+            labelbottom=False,
+        )
+        return ax
+
+    def scatter(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        if df.shape[1] == 1:
+            return self.scatter_1D(X, lengths=lengths)
+
