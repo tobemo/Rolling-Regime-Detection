@@ -84,8 +84,6 @@ def test_model_setting_and_getting(rc):
         rc.model
     with pytest.raises(IndexError):
         rc.models[-1]
-    with pytest.raises(IndexError):
-        rc[-1]
 
     rc.model = 'A'
     rc.model = 'B'
@@ -95,17 +93,27 @@ def test_model_setting_and_getting(rc):
 
     assert rc.model == 'D'
     assert rc.models[-1] == 'D'
-    assert rc[-1] == 'D'
 
-    assert rc[0] == 'A'
-    assert rc[1] == 'B'
-    assert rc[2] == 'C'
-    assert rc[3] == 'D'
-    
     assert rc.models[0] == 'A'
     assert rc.models[1] == 'B'
     assert rc.models[2] == 'C'
     assert rc.models[3] == 'D'
+
+
+def test_getitem(rc):
+    rc.model = 'A'
+    rc.model = 'B'
+    rc.model = 'C'
+    rc.model = 'D'
+
+    rc2 = rc[2]
+    assert rc2.model == 'C'
+    rc2 = rc[-2]
+    assert rc2.model == 'C'
+    rc2 = rc[0]
+    assert rc2.model == 'A'
+    rc2 = rc[-1]
+    assert rc2.model == 'D'
 
 
 def test_initial_fit():

@@ -7,6 +7,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 
 from base import MyHMM
@@ -78,10 +79,19 @@ class RegimeClassifier():
             f"Tracking [{len(self.models)}/{self.models.maxlen}] HMM's."
         )
     
-    def __getitem__(self, i: int) -> MyHMM:
-        """Directly access a tracked model."""
-        return self.models[i]
-    
+    def __getitem__(self, i: int):
+        """Get regime classifier at a previous point in time."""
+        if i == -1:
+            return self
+        
+        rc = type(self).from_json(
+            self.classifier_to_json()
+        )
+        i += 1
+        for model in list(self.models)[:i]:
+            rc.models.append(model)
+        return rc
+
     _classifier_config: dict
     @property
     def classifier_config(self) -> dict:
