@@ -366,13 +366,29 @@ class RegimeClassifier():
             predictions.iloc[end:, i] = None
 
         return predictions
+    
+    @classmethod
+    def from_json(cls, config: str):
+        # create regime classifier object
+        config = json.loads(config)
+        regime_classifier = cls(**config)
+        return regime_classifier
+    
+    def add_models_from_json(self, configs: list[str]) -> None:
+        # load models and sort by timestamp
+        configs = configs[-self.models.maxlen:]
+        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
+        models.sort(key=lambda m: m.timestamp)
+
+        # add to regime classifier
+        for model in models:
+            self.models.append(model)
 
     @classmethod
     def from_jsons(cls, classifier_config: str, configs: list[str]):
         """Fill `self.models` with MyVariationalGaussianHMM initialized using a json string."""
         # create regime classifier object
-        classifier_config = json.loads(classifier_config)
-        regime_classifier = cls(**classifier_config)
+        regime_classifier = cls.from_json(classifier_config)
 
         # load models and sort by timestamp
         configs = configs[-regime_classifier.models.maxlen:]
