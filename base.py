@@ -298,14 +298,14 @@ class MyHMM(ABC):
             width_ratios=[0.8, 0.2],
             gridspec_kw=dict(wspace=0)
         )
-        ax[0].scatter(X.index, X, c=Z)
+        ax[0].scatter(X.index, X, c=Z, cmap='rocket')
 
         parts = ax[1].violinplot(X, showextrema=False, showmedians=False)
         for pc in parts['bodies']:
             pc.set_facecolor('grey')
             pc.set_edgecolor('black')
             pc.set_alpha(1)
-        ax[1].scatter([1]*len(X), X, c=Z)
+        ax[1].scatter([1]*len(X), X, c=Z, cmap='rocket')
         ax[1].tick_params(
             axis='x',
             which='both',
@@ -313,12 +313,40 @@ class MyHMM(ABC):
             labelbottom=False,
         )
         return ax
+    
+    def scatter_2D(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        Z = self.predict(X)
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
+            Z = pd.DataFrame(Z)
+        
+        fig, ax = plt.subplots(
+            ncols=2,
+            width_ratios=[0.8, 0.2],
+            gridspec_kw=dict(wspace=0.05)
+        )
+        scatter = ax[0].scatter(X.iloc[:,0], X.iloc[:, 1], c=Z, cmap='rocket')
+
+        counts = Z.value_counts().sort_index()
+        counts.plot.bar(
+            ax=ax[1],
+            color=[scatter.to_rgba(i) for i in counts.index],
+        )
+        ax[1].yaxis.set_label_position("right")
+        ax[1].yaxis.tick_right()
+        return ax
 
     def scatter(
         self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
     ) -> plt.Axes:
-        if df.shape[1] == 1:
+        if X.shape[1] == 1:
             return self.scatter_1D(X, lengths=lengths)
-
+        elif X.shape[1] == 2:
+            return self.scatter_2D(X, lengths=lengths)
+        raise NotImplementedError("Only 1D and 2D inputs are supported.")

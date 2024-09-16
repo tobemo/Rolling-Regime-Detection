@@ -442,6 +442,19 @@ class RegimeClassifier():
         )
         return ax
 
+    def scatter_2D(
+        self,
+        X: np.ndarray | pd.DataFrame,
+        lengths: Optional[list[int]]=None
+    ) -> plt.Axes:
+        ax = self.model.scatter_2D(X, lengths=lengths)
+        plt.figtext(
+            0.99, 0.01,
+            'Using hindsight bias!',
+            horizontalalignment='right'
+        )
+        return ax
+
     def scatter(
         self,
         X: np.ndarray | pd.DataFrame,
@@ -449,5 +462,6 @@ class RegimeClassifier():
     ) -> plt.Axes:
         if df.shape[1] == 1:
             return self.scatter_1D(X, lengths=lengths)
+        elif X.shape[1] == 2:
+            return self.scatter_2D(X, lengths=lengths)
 
-    
