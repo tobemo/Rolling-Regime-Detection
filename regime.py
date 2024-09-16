@@ -53,6 +53,7 @@ class RegimeClassifier():
             verbose=verbose,
         )
         self._n_components = n_components
+        self.scores = []
     
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(n_components={self.n_components})"
@@ -239,9 +240,26 @@ class RegimeClassifier():
         )
 
         # log
+        sil_prev = silhouette_score(
+            X, previous_model.predict(X, lengths=lengths)
+        )
+        sil_new = silhouette_score(
+            X, new_model.predict(X, lengths=lengths)
+        )
+        sil_new_with_added_regime = silhouette_score(
+            X, new_model_with_added_regime.predict(X, lengths=lengths)
+        )
         self.logger.debug(
             f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
         )
+        self.logger.debug(
+            f"Silhouette scores are: {sil_prev, sil_new, sil_new_with_added_regime}."
+        )
+        self.scores.append({
+            'prev': (bic_prev, sil_prev),
+            'new': (bic_new, sil_new),
+            'extra': (bic_new_with_added_regime, sil_new_with_added_regime),
+        })
 
         # determine best model
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
@@ -287,7 +305,7 @@ class RegimeClassifier():
         best_model.mapping = mapping
 
         # store total cost in model objects themselves
-        new_model.transition_cost = calculate_total_cost(
+        best_model.transition_cost = calculate_total_cost(
             transition_cost_matrix,
             norm=previous_model.n_components,
         )
