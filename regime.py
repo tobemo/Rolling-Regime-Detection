@@ -45,13 +45,14 @@ class RegimeClassifier():
         """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`.
         If n_components is a list of int then the best number of regimes from that list is detected.
         If n_components is an int >0 then that number of regimes is used."""
-        self.name = 'root' or name
+        self.name = name or 'root'
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
         self._classifier_config = dict(
             n_components=n_components,
             n_iter=n_iter,
             tol=tol,
             verbose=verbose,
+            name=name,
         )
         self._n_components = n_components
         self.scores = []
@@ -179,6 +180,7 @@ class RegimeClassifier():
             # first find the best initialization 
             # for the current number of regimes
             cfg = self.classifier_config
+            cfg.pop('name')
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
             sub_model = MyVariationalGaussianHMM(**cfg)
