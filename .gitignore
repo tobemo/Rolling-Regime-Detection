@@ -2,5 +2,13 @@
 .vscode
 **pyc
 debug.py
-*.pdf
-*.png
+*ipynb
+
+*.log
+
+*.csv
+*.json
+
+train_all.py
+volume.py
+bic/
