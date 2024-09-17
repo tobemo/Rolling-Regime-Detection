@@ -250,27 +250,9 @@ class RegimeClassifier():
         )
 
         # log
-        sil_prev = silhouette_score(
-            X, previous_model.predict(X, lengths=lengths)
-        )
-        sil_new = silhouette_score(
-            X, new_model.predict(X, lengths=lengths)
-        )
-        sil_new_with_added_regime = silhouette_score(
-            X, new_model_with_added_regime.predict(X, lengths=lengths)
-        )
         self.logger.debug(
             f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
         )
-        self.logger.debug(
-            f"Silhouette scores are: {sil_prev, sil_new, sil_new_with_added_regime}."
-        )
-        self.scores.append({
-            'prev': (bic_prev, sil_prev),
-            'new': (bic_new, sil_new),
-            'extra': (bic_new_with_added_regime, sil_new_with_added_regime),
-        })
-
         # determine best model
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
             self.model = previous_model
