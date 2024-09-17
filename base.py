@@ -357,20 +357,21 @@ class MyHMM(ABC):
         Z = self.predict(X)
         return self._scatter_2D(X=X, Z=Z)
 
-    def scatter_nD(self,
+    def scatter_nD(
+        self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
-    ) -> plt.Axes:
+        ) -> plt.Axes:
         """Emits regimes for X then reduces X, using t-SNE, and plots a scatter plot plus a histogram."""
         Z = self.predict(X)
-        X_embedded = TSNE(n_components).fit_transform(X)
+        X_embedded = TSNE(self.n_components).fit_transform(X)
         return self._scatter_2D(X=X_embedded, Z=Z)        
 
     def scatter(
         self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
-    ) -> plt.Axes:
+        ) -> plt.Axes:
         """Plot regime data."""
         if X.shape[1] == 1:
             return self.scatter_1D(X, lengths=lengths)
