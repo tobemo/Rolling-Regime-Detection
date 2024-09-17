@@ -184,7 +184,11 @@ class RegimeClassifier():
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
             sub_model = MyVariationalGaussianHMM(**cfg)
-            sub_model.fit(X, lengths=lengths, k=k)
+            try:
+                sub_model.fit(X, lengths=lengths, k=k)
+            except Exception as e:
+                self.logger.exception(e)
+                continue
             
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
