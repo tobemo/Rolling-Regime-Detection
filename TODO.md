@@ -78,6 +78,7 @@
 - [x] test for predict all
 - [x] test plotting
 - [x] handle models raising during fit.
+- [ ] speed up fitting
 - [ ] split up fit into sub calls
 - [ ] **test catastrophic fit failures**
 	- [ ] initial fit
