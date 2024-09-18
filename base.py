@@ -102,13 +102,17 @@ class MyHMM(ABC):
         for _ in range(k):
             config['random_state'] = np.random.randint(1e6)
             _model = self.HMM(**config)
-            _model.fit(X, lengths)
+            try:
+                _model.fit(X, lengths)
+            except Exception as e:
+                continue
             _score = _model.score(X)
             if _score > score:
                 model = _model
                 score = _score
         
-        model = model or _model
+        if model is None:
+            raise RuntimeError(e)
         self.__dict__.update(model.__dict__)
         return self
         
