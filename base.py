@@ -99,20 +99,23 @@ class MyHMM(ABC):
         score = -np.inf
         model = None
         config = self.HMM_config
-        for _ in range(k):
+        for i in range(1, k+1):
             config['random_state'] = np.random.randint(1e6)
             _model = self.HMM(**config)
             try:
                 _model.fit(X, lengths)
             except Exception as e:
+                # raise on last fit only, and only if no model has been fitted
+                if not model and i == k:
+                    raise e
                 continue
             _score = _model.score(X)
             if _score > score:
                 model = _model
                 score = _score
         
-        if model is None:
-            raise RuntimeError(e)
+        if not model:
+            raise RuntimeError("Failed to fit a single model.")
         self.__dict__.update(model.__dict__)
         return self
         
