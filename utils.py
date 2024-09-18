@@ -266,3 +266,48 @@ def new_model_collapsed(model_old, model_new, X):
     return len(np.unique(model_new.predict(X))) < \
         len(np.unique(model_old.predict(X)))
 
+
+def sample_by(
+        X: np.ndarray | pd.DataFrame,
+        Z: np.ndarray | pd.Series,
+        f: float,
+    ) -> np.ndarray | pd.DataFrame:
+    """Sample X, proportionally to class values in Z.
+
+    If twice as many samples of X belong to class a compared to class b then the sampled data will contain around twice as many samples of class a.
+
+    Args:
+        X (np.ndarray | pd.DataFrame): Matrix to sample.
+        Z (np.ndarray | pd.Series): Vector holding information on class
+        f (float): Fraction of X to sample.
+
+    Returns:
+        np.ndarray | pd.DataFrame: Sampled data.
+    """
+    if len(Z) != len(X):
+        raise ValueError(
+            f"X and Z should have the same length {len(X)} != {len(Z)}."
+        )
+    
+    groups, inverse , counts = np.unique(
+        Z,
+        return_inverse=True,
+        return_counts=True,
+    )
+
+    fractions = counts / len(Z)
+    probability_per_sample = fractions[inverse]
+    probability_per_sample /= sum(probability_per_sample)
+
+    samples = np.random.choice(
+        np.arange(len(Z)),
+        size=int(f * len(Z)),
+        replace=False,
+        p=probability_per_sample,
+    )
+    samples = np.sort(samples)
+
+    if isinstance(X, pd.DataFrame):
+        return X.iloc[samples]
+    return X[samples]
+

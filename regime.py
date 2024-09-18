@@ -14,7 +14,7 @@ from base import MyHMM
 from my_vhmm import MyVariationalGaussianHMM
 from utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
                    get_regime_map, get_transition_cost_matrix,
-                   new_model_collapsed, transfer_model)
+                   new_model_collapsed, transfer_model, sample_by)
 
 N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
 
@@ -228,6 +228,15 @@ class RegimeClassifier():
         
         # model 1: previous model
         previous_model = copy_model(self.model)
+        
+        # sample X
+        # TODO; ideally new data in X is used in it's entirety
+        # maybe this shouldn't be done here but externally?
+        X = sample_by(
+            X=X,
+            Z=previous_model.predict(X, lengths=lengths),
+            f=0.5, # ! TODO HC
+        )
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
