@@ -187,8 +187,13 @@ class RegimeClassifier():
             try:
                 sub_model.fit(X, lengths=lengths, k=k)
             except Exception as e:
-                self.logger.exception(e)
-                continue
+                # raise on last fit only, and only if no model has been fitted
+                if not best_model and regime == regimes[-1]:
+                    raise e
+                else: # just continue
+                    self.logger.error(f"Failed to fit {regime} regimes.")
+                    self.logger.error(e)
+                    continue
             
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
@@ -204,13 +209,47 @@ class RegimeClassifier():
                 best_silhouette_score = this_silhouette_score
         
         # ensure a decent model has actually been fitted
-        # failure is each model consistently only detecting one regime
+        # failure can be each model consistently only detecting one regime
         if not best_model:
             raise RuntimeError('Failed to fit even one working model.')
+        
         self.model = best_model
         self.logger.info(
             f"Initial fit found best number of regimes to be {self.model.n_components}"
         )
+    
+    def _handle_failed_fit(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            lengths: Optional[list[int]]=None
+        ) -> None:
+        """Logic to handle and track failed fits."""
+        # initialize counter if needed and store original value
+        if not hasattr(self, '_n_allowed_fails'):
+            self._n_allowed_fails = getattr(
+                self,
+                'fit_can_fail_this_many_times',
+                default=6
+            )
+            self.fit_can_fail_this_many_times = self._n_allowed_fails
+        
+        # decrease counter on each fail
+        self.fit_can_fail_this_many_times -= 1
+        if self.fit_can_fail_this_many_times > 0:
+            return
+    
+        self.logger.critical(
+            f"Fit failed too many times. Trying to clean slate by running initial_fit."
+        )
+
+        # catch initial fit failing
+        try:
+            self.initial_fit(X, lengths=lengths)
+        except Exception as e:
+            self.logger.critical("Initial fit failed as well, now stuck with last working model for a while.")
+            self.logger.exception(e)
+            # reset counter
+            self.fit_can_fail_this_many_times = self._n_allowed_fails
 
     def fit(
             self,
@@ -239,7 +278,14 @@ class RegimeClassifier():
         new_model = transfer_model(
             old_model=self.model,
         )
-        new_model.fit(X, lengths=lengths)
+        try:
+            new_model.fit(X, lengths=lengths)
+        except Exception as e:
+            self.logger.warning("Fit failed, reusing previous model.")
+            self.logger.exception(e)
+            self.model = previous_model
+            self._handle_failed_fit(X, lengths=lengths)
+            return self
 
         # model 3: transfer learn but add one extra regime
         new_model_with_added_regime = transfer_model(
