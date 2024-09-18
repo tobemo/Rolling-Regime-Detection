@@ -76,4 +76,13 @@
     - ~2 hours per
 - [x] tests for time index
 - [x] test for predict all
-- [ ] test plotting
+- [x] test plotting
+- [x] handle models raising during fit.
+- [ ] split up fit into sub calls
+- [ ] **test catastrophic fit failures**
+	- [ ] initial fit
+	- [ ] online fit
+	- [ ] initial fit after online fit
+- [ ] determine what state info of RegimeClassifier I want to write to file in regards to fault recovery
+	- n_failed_fits?
+	- name
