@@ -312,13 +312,20 @@ def sample_by(
         return_counts=True,
     )
 
+    # sample pre group
     samples = []
     for g in groups:
         subset = index[Z == g]
+
         td = np.ones(len(subset)) / len(subset)
         if p is not None:
             td = p[Z == g]
+        
+        # don't sample any if probability is set to 0
+        if td.sum() == 0:
+            continue
 
+        # sample fraction for this group
         samples.append(
             np.random.choice(
                 a=subset,

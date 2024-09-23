@@ -181,16 +181,22 @@ def test_sampling_by():
             p=pd.Series(np.arange(10), index=pd.RangeIndex(1, 12)),
         )
     
+    X = np.array([0]*20 + [1,1])
+    Z = np.array([0]*20 + [1, 1])
     # check per regime sampling
     s = sample_by(
-        X=pd.Series([0]*20 + [1, 1]).to_frame(),
-        Z=pd.Series([0]*20 + [1, 1]),
+        X=X,
+        Z=Z,
         f=0.1,
-        p=pd.Series(np.linspace(0,1, 22))
+        p=np.linspace(0,1, 22),
     )
-    assert s.iloc[-1,0] == 1
+    assert s[-1] == 1
 
-    # without per sample proba
-    # with per sample proba
     # with per sample proba where proba for one or more groups is 0
-    pass
+    s = sample_by(
+        X=X,
+        Z=Z,
+        f=0.1,
+        p=np.concatenate([np.linspace(0,1, 20), np.zeros(2)])
+    )
+    assert s[-1] == 0
