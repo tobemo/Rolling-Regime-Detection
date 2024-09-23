@@ -271,6 +271,7 @@ def sample_by(
         X: np.ndarray | pd.DataFrame,
         Z: np.ndarray | pd.Series,
         f: float,
+        p: np.ndarray | pd.Series = None,
     ) -> np.ndarray | pd.DataFrame:
     """Sample X, proportionally to class values in Z.
 
@@ -279,7 +280,8 @@ def sample_by(
     Args:
         X (np.ndarray | pd.DataFrame): Matrix to sample.
         Z (np.ndarray | pd.Series): Vector holding information on class
-        f (float): Fraction of X to sample.
+        f (float): Fraction of X to sample. Each regime is sampled separately.
+        sample_probabilities (np.ndarray | pd.DataFrame): The probabilities associated with each entry in X. If not given, the sample assumes a uniform distribution over all entries in X. Samples are drawn per regime.
 
     Returns:
         np.ndarray | pd.DataFrame: Sampled data.
@@ -288,23 +290,44 @@ def sample_by(
         raise ValueError(
             f"X and Z should have the same length {len(X)} != {len(Z)}."
         )
+    if isinstance(Z, pd.Series) and not isinstance(X, pd.DataFrame):
+        raise TypeError(f"Z being pandas Series while X not being pandas Dataframe is not supported.")
+    if isinstance(Z, pd.Series) and not Z.index.equals(X.index):
+        raise ValueError("Index of Z does not match that of X.")
     
-    groups, inverse , counts = np.unique(
+    if p is not None:
+        if not len(Z) == len(p):
+            raise ValueError(
+                f"Length of p does not match that of Z, {len(p)} vs {len(Z)}."
+            )
+        if isinstance(p, pd.Series):
+            if not p.index.equals(Z.index):
+                raise ValueError(
+                    "Index of p does not match that of Z."
+                )
+    
+    index = np.arange(len(Z))
+    groups , counts = np.unique(
         Z,
-        return_inverse=True,
         return_counts=True,
     )
 
-    fractions = counts / len(Z)
-    probability_per_sample = fractions[inverse]
-    probability_per_sample /= sum(probability_per_sample)
+    samples = []
+    for g in groups:
+        subset = index[Z == g]
+        td = np.ones(len(subset)) / len(subset)
+        if p is not None:
+            td = p[Z == g]
 
-    samples = np.random.choice(
-        np.arange(len(Z)),
-        size=int(f * len(Z)),
-        replace=False,
-        p=probability_per_sample,
-    )
+        samples.append(
+            np.random.choice(
+                a=subset,
+                size=max(1, int( f * len(subset) ) ), # keep at least one
+                replace=False,
+                p=td / sum(td),
+            )
+        )
+    samples = np.concatenate(samples)
     samples = np.sort(samples)
 
     if isinstance(X, pd.DataFrame):

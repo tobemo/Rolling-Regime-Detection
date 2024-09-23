@@ -1,10 +1,11 @@
 import numpy as np
+import pandas as pd
 import pytest
 
 from utils import (added_regime_costs_less, calculate_total_cost,
                    extend_startprob, extend_transmat, get_regime_map,
                    get_transition_cost_matrix, new_regime_is_advised,
-                   old_regime_is_too_costly)
+                   old_regime_is_too_costly, sample_by)
 
 
 def test_extend_transmat():
@@ -136,3 +137,60 @@ def test_new_regime_is_advised():
         added_regime_cost=2,
         threshold=2.5,
     )
+
+
+def test_sampling_by():
+    # mismatch X & Z
+    with pytest.raises(ValueError):
+        sample_by(
+            X=np.arange(3),
+            Z=np.arange(10),
+            f=0.5
+        )
+    with pytest.raises(TypeError):
+        sample_by(
+            X=np.arange(10),
+            Z=pd.Series(np.arange(10)),
+            f=0.5
+        )
+    with pytest.raises(ValueError):
+        sample_by(
+            X=pd.Series(np.arange(10)),
+            Z=pd.Series(np.arange(10), index=pd.RangeIndex(1, 12)),
+            f=0.5
+        )
+    sample_by(
+        X=np.arange(10),
+        Z=np.arange(10),
+        f=0.5
+    )
+
+    # mismatch sample probability
+    with pytest.raises(ValueError):
+        sample_by(
+            X=np.arange(10),
+            Z=np.arange(10),
+            f=0.5,
+            p=np.arange(3)
+        )
+    with pytest.raises(ValueError):
+        sample_by(
+            X=pd.Series(np.arange(10)),
+            Z=pd.Series(np.arange(10)),
+            f=0.5,
+            p=pd.Series(np.arange(10), index=pd.RangeIndex(1, 12)),
+        )
+    
+    # check per regime sampling
+    s = sample_by(
+        X=pd.Series([0]*20 + [1, 1]).to_frame(),
+        Z=pd.Series([0]*20 + [1, 1]),
+        f=0.1,
+        p=pd.Series(np.linspace(0,1, 22))
+    )
+    assert s.iloc[-1,0] == 1
+
+    # without per sample proba
+    # with per sample proba
+    # with per sample proba where proba for one or more groups is 0
+    pass
