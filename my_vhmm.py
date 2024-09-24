@@ -34,8 +34,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     def HMM(self) -> VariationalGaussianHMM:
         return VariationalGaussianHMM
     
-    @property
-    def HMM_config(self) -> dict:
+    def get_params(self) -> dict:
         return deepcopy(self._hmm_config)
 
     def __init__(

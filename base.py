@@ -44,7 +44,7 @@ class MyHMM(ABC):
     def transition_cost(self, cost: float) -> None:
         self._transition_cost = cost
 
-    timestamp: int
+    timestamp_: int
     """Fit time."""
 
     _mapping: np.ndarray
@@ -82,13 +82,12 @@ class MyHMM(ABC):
     
     @property
     @abstractmethod
-    def HMM_config(self):
+    def get_params(self):
         """Config for HMM model."""
         pass
     
-    def __init__(self, timestamp: int = None) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
     
     def _multi_fit(self,
@@ -98,7 +97,7 @@ class MyHMM(ABC):
         ):
         score = -np.inf
         model = None
-        config = self.HMM_config
+        config = self.get_params
         for i in range(1, k+1):
             config['random_state'] = np.random.randint(1e6)
             _model = self.HMM(**config)
@@ -131,9 +130,9 @@ class MyHMM(ABC):
         else:
             self._multi_fit(X, lengths, k)
     
-        self.timestamp = int(time.time())
+        self.timestamp_ = int(time.time())
         if isinstance(X, pd.DataFrame) and isinstance(X.index,pd.DatetimeIndex):
-            self.timestamp = int(X.index[-1].timestamp())
+            self.timestamp_ = int(X.index[-1].timestamp())
 
         return self
     
@@ -200,8 +199,7 @@ class MyHMM(ABC):
             probas = pd.DataFrame(probas, index=X.index)
         return probas
 
-    @property
-    def init_config(self) -> dict:
+    def get_params(self, deep: bool = False) -> dict:
         """Returns creation config."""
         return deepcopy({
             "n_components": self.n_components,
@@ -210,7 +208,6 @@ class MyHMM(ABC):
             "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
-            "timestamp": self.timestamp
         })
 
     def get_config(self) -> dict:
@@ -221,7 +218,7 @@ class MyHMM(ABC):
         
         This enables serialization and persistence."""
         config = {
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp_,
             "transition_cost": self.transition_cost
         }
         if hasattr(self, "mapping"):

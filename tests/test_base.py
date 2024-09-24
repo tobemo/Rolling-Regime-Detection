@@ -16,6 +16,6 @@ def test_init():
     obj = MyHMMTest()
     assert hasattr(obj, 'timestamp')
     obj = MyHMMTest(timestamp=1)
-    assert obj.timestamp == 1
+    assert obj.timestamp_ == 1
 
 

@@ -63,7 +63,7 @@ def test_timestamp():
     model = MyVariationalGaussianHMM(n_components=2)
     X_ = pd.DataFrame(X, index=ts)
     model.fit(X_)
-    assert model.timestamp == int(X_.index[-1].timestamp())
+    assert model.timestamp_ == int(X_.index[-1].timestamp())
 
 
 def test_predict(trained_model):
