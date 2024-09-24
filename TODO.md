@@ -77,3 +77,6 @@
 - [x] tests for time index
 - [x] test for predict all
 - [ ] test plotting
+- [ ] hybrid sampling:
+    - use all last $n$ samples
+    - use time decay for all samples before $n$
