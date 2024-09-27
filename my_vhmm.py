@@ -29,41 +29,30 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     def means_(self, means) -> None:
         # monkey patch to make mean settable
         self.means_posterior_ = means
-    
-    @property
-    def HMM(self) -> VariationalGaussianHMM:
-        return VariationalGaussianHMM
-    
-    def get_params(self) -> dict:
-        return deepcopy(self._hmm_config)
 
     def __init__(
             self,
-            n_components=1,
+            n_components=2,
             init_params='stmc',
             random_state=None,
             n_iter=100,
             tol=1e-6,
             verbose=False,
-            timestamp: int = None,
         ) -> None:
-        """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kepts, see `fit` and `multi_fit`.`"""
-        MyHMM.__init__(self, timestamp=timestamp)
-        self._hmm_config = dict(
+        """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kept, see `fit` and `multi_fit`.`"""
+        MyHMM.__init__(self)
+        VariationalGaussianHMM.__init__(
+            self,
             covariance_type="full",
             algorithm="viterbi",
             params='stmc',
             implementation='scaling',
-            n_components=n_components, 
+            n_components=n_components,
             init_params=init_params,
             random_state=random_state,
             n_iter=n_iter,
             tol=tol,
             verbose=verbose,
-        )
-        self.HMM.__init__(
-            self,
-            **self._hmm_config
         )
 
     def get_fitted_params(self) -> dict:
@@ -88,9 +77,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
     
     @classmethod
     def set_fitted_params(cls, config: dict):
-        """Initialize a MyVariationalGaussianHMM from a config.
-        
-        See `to_config()`"""
+        """Initialize a MyVariationalGaussianHMM from a config."""
         model = cls(
             n_components=config["n_components"],
             init_params=config["init_params"],
@@ -98,7 +85,6 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             n_iter=config["n_iter"],
             tol=config["tol"],
             verbose=config["verbose"],
-            timestamp=config["timestamp"],
         )
         model.n_features = config["n_features"]
         model.transition_cost = config["transition_cost"]

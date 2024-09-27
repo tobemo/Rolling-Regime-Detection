@@ -77,12 +77,6 @@ class MyHMM(ABC):
             zip(*self.mapping.T.tolist())
         )
     
-    @property
-    @abstractmethod
-    def HMM(self):
-        """HMM model to use."""
-        pass
-    
     def __init__(self) -> None:
         super().__init__()
         self._transition_cost = np.inf
@@ -97,7 +91,7 @@ class MyHMM(ABC):
         config = self.get_params()
         for i in range(1, k+1):
             config['random_state'] = np.random.randint(1e6)
-            _model = self.HMM(**config)
+            _model = type(self)(**config)
             try:
                 _model.fit(X, lengths)
             except Exception as e:
