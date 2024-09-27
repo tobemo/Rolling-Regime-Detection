@@ -80,8 +80,8 @@ def test_predict(trained_model):
 
 def test_loading_config(trained_model):
     cfg = trained_model.get_config()
-    obj2 = MyVariationalGaussianHMM.from_config(cfg)
-    cfg2 = obj2.get_config()
+    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
+    cfg2 = obj2.get_fitted_params()
     cfg.pop('init_params')
     cfg2.pop('init_params')
     assert cfg == cfg2
@@ -89,7 +89,7 @@ def test_loading_config(trained_model):
 
 def test_loading_config_model_equality(trained_model):
     cfg = trained_model.get_config()
-    obj2 = MyVariationalGaussianHMM.from_config(cfg)
+    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
     assert obj2.means_ == pytest.approx(trained_model.means_)
     assert obj2.covars_ == pytest.approx(trained_model.covars_)
     assert obj2.startprob_ == pytest.approx(trained_model.startprob_)
@@ -98,7 +98,7 @@ def test_loading_config_model_equality(trained_model):
 
 def test_loading_config_prediction_equality(trained_model):
     cfg = trained_model.get_config()
-    obj2 = MyVariationalGaussianHMM.from_config(cfg)
+    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
@@ -111,7 +111,7 @@ def test_to_json(trained_model):
 
 def test_from_json(trained_model):
     string = trained_model.to_json()
-    obj2 = MyVariationalGaussianHMM.from_json(string)
+    obj2 = MyVariationalGaussianHMM.set_fitted_params(string)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
@@ -120,7 +120,7 @@ def test_from_json(trained_model):
     # with mapping set
     trained_model.mapping = np.array([[0, 1, 2, 3], [1, 2, 3, 0]]).T
     string = trained_model.to_json()
-    obj2 = MyVariationalGaussianHMM.from_json(string)
+    obj2 = MyVariationalGaussianHMM.set_fitted_params(string)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])

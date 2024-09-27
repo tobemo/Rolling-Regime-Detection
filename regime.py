@@ -454,7 +454,7 @@ class RegimeClassifier():
     def add_models_from_json(self, configs: list[str]) -> None:
         # load models and sort by timestamp
         configs = configs[-self.models.maxlen:]
-        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
+        models = [MyVariationalGaussianHMM.set_fitted_params(cfg) for cfg in configs]
         models.sort(key=lambda m: m.timestamp)
 
         # add to regime classifier
@@ -469,7 +469,7 @@ class RegimeClassifier():
 
         # load models and sort by timestamp
         configs = configs[-regime_classifier.models.maxlen:]
-        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
+        models = [MyVariationalGaussianHMM.set_fitted_params(cfg) for cfg in configs]
         models.sort(key=lambda m: m.timestamp)
 
         # add to regime classifier

@@ -210,11 +210,11 @@ class MyHMM(ABC):
             "verbose": self.verbose,
         })
 
-    def get_config(self) -> dict:
-        """Get config that exactly describes this model.
-        This not only includes thins like creation time and number of components but also things like start probabilities.
+    def get_fitted_params(self) -> dict:
+        """Get dictionary that exactly describes this model.
+        This not only includes things like creation time and number of components but also things like start probabilities.
         
-        Can be used to initialize this class to an already fitted, and ready to use, model; when using MyVariationalGaussianHMM.from_config()
+        Can be used to initialize this class to an already fitted, and ready to use, model; when using MyHMM.set_fitted_params()
         
         This enables serialization and persistence."""
         config = {
@@ -227,19 +227,19 @@ class MyHMM(ABC):
 
     def to_json(self) -> str:
         """Model to json string."""
-        config = self.get_config()
+        config = self.get_fitted_params()
         return json.dumps(config)
 
     @classmethod
     @abstractmethod
-    def from_config(cls, config: dict):
+    def set_fitted_params(cls, config: dict):
         pass
         
     @classmethod
     def from_json(cls, config: str):
         """Model from json string."""
-        config = json.loads(config)
-        return cls.from_config(config)
+        params = json.loads(params)
+        return cls.set_fitted_params(params)
 
     def _check(self) -> None:
         # Don't call check on fitted models.
@@ -383,3 +383,4 @@ class MyHMM(ABC):
             return self.scatter_2D(X, lengths=lengths)
         else:
             return self.scatter_nD(X, lengths=lengths)
+

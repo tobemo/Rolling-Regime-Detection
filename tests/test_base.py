@@ -9,9 +9,9 @@ def test_init():
     class MyHMMTest(MyHMM):
         HMM = None
         HMM_config = None
-        def from_config(cls, config: dict):
+        def set_fitted_params(cls, config: dict):
             pass
-        def get_config(self) -> dict:
+        def get_fitted_params(self) -> dict:
             pass
     obj = MyHMMTest()
     assert hasattr(obj, 'timestamp')

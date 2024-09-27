@@ -84,8 +84,8 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
 
 def copy_model(model: MyHMM) -> MyHMM:
     """Copy model as is."""
-    config = model.get_config()
-    new_model = type(model).from_config(config)
+    config = model.get_fitted_params()
+    new_model = type(model).set_fitted_params(config)
     return new_model
 
 

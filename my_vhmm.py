@@ -66,8 +66,8 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             **self._hmm_config
         )
 
-    def get_config(self) -> dict:
-        config = super().get_config()
+    def get_fitted_params(self) -> dict:
+        config = super().get_fitted_params()
         config.update(
             {
                 "n_components": self.n_components,
@@ -87,7 +87,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
         return config
     
     @classmethod
-    def from_config(cls, config: dict):
+    def set_fitted_params(cls, config: dict):
         """Initialize a MyVariationalGaussianHMM from a config.
         
         See `to_config()`"""
