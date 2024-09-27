@@ -9,6 +9,7 @@ import pandas as pd
 from hmmlearn import hmm
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.utils.validation import check_is_fitted
 
 
 def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
@@ -44,8 +45,12 @@ class MyHMM(ABC):
     def transition_cost(self, cost: float) -> None:
         self._transition_cost = cost
 
-    timestamp_: int
+    timestamp_: str
     """Fit time."""
+    @property
+    def timestamp(self) -> pd.Timestamp:
+        check_is_fitted(self)
+        return pd.to_datetime(self.timestamp_) #fromisoformat drops tz
 
     _mapping: np.ndarray
     @property
@@ -69,9 +74,7 @@ class MyHMM(ABC):
         # turn 2 array into dict with first col being keys
         # and second col being values
         return dict(
-            zip(
-                *self.mapping.T.tolist()
-            )
+            zip(*self.mapping.T.tolist())
         )
     
     @property
@@ -130,10 +133,9 @@ class MyHMM(ABC):
         else:
             self._multi_fit(X, lengths, k)
     
-        self.timestamp_ = int(time.time())
+        self.timestamp_ = pd.Timestamp.now(tz='UTC').isoformat()
         if isinstance(X, pd.DataFrame) and isinstance(X.index,pd.DatetimeIndex):
-            self.timestamp_ = int(X.index[-1].timestamp())
-
+            self.timestamp_ = X.index[-1].isoformat()
         return self
     
     def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
