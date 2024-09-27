@@ -1,7 +1,6 @@
 import json
 import os
 from collections import deque
-from copy import deepcopy
 from logging import Logger, getLogger
 from typing import Optional
 
@@ -10,8 +9,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 
-from base import MyHMM
-from my_vhmm import MyVariationalGaussianHMM
+from base import HMMBase
+from my_vhmm import VariationalGaussianHMM
 from utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
                    get_regime_map, get_transition_cost_matrix,
                    new_model_collapsed, transfer_model)
@@ -60,10 +59,10 @@ class RegimeClassifier():
     def logger(self) -> Logger:
         return getLogger(self.__class__.__name__).getChild(self.name)
     
-    models: deque[MyHMM]
+    models: deque[HMMBase]
     """List of all trained models."""
     @property
-    def model_(self) -> MyHMM:
+    def model_(self) -> HMMBase:
         """Last trained model."""
         if not self.has_models:
             raise AttributeError("RegimeClassifier currently tracks 0 models.")
@@ -195,7 +194,7 @@ class RegimeClassifier():
             cfg.pop('name')
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
-            sub_model = MyVariationalGaussianHMM(**cfg)
+            sub_model = VariationalGaussianHMM(**cfg)
             try:
                 sub_model.fit(X, lengths=lengths, k=k)
             except Exception as e:
@@ -454,7 +453,7 @@ class RegimeClassifier():
     def add_models_from_json(self, configs: list[str]) -> None:
         # load models and sort by timestamp
         configs = configs[-self.models.maxlen:]
-        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
+        models = [VariationalGaussianHMM.from_json(cfg) for cfg in configs]
         models.sort(key=lambda m: m.timestamp)
 
         # add to regime classifier

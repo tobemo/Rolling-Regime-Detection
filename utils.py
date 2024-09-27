@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import optimize, stats
 
-from base import MyHMM
+from base import HMMBase
 
 
 def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
@@ -82,7 +82,7 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
     return new_transmat
 
 
-def copy_model(model: MyHMM) -> MyHMM:
+def copy_model(model: HMMBase) -> HMMBase:
     """Copy model as is."""
     params = model.get_fitted_params()
     new_model = type(model).set_fitted_params(params)
@@ -90,11 +90,11 @@ def copy_model(model: MyHMM) -> MyHMM:
 
 
 def transfer_model(
-        old_model: MyHMM,
+        old_model: HMMBase,
         n_components: int = None,
         n_iter: int = None,
         tol: float = None,
-        ) -> MyHMM:
+        ) -> HMMBase:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over.
     If `n_component` is greater than `old_model.n_component` then one or more regimes are added."""
     params = old_model.get_params()

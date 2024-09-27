@@ -3,13 +3,13 @@ import os
 from copy import deepcopy
 
 import numpy as np
-from hmmlearn.vhmm import VariationalGaussianHMM
+from hmmlearn.vhmm import VariationalGaussianHMM as VGHMM
 from sklearn.utils.validation import check_is_fitted
 
-from base import MyHMM
+from base import HMMBase
 
 
-class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
+class VariationalGaussianHMM(HMMBase, VGHMM):
     """VariationalGaussianHMM with some settings fixed:
     
     covariance_type: 'full'
@@ -41,7 +41,7 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
             verbose=False,
         ) -> None:
         """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kept, see `fit` and `multi_fit`.`"""
-        MyHMM.__init__(self)
+        HMMBase.__init__(self)
         VariationalGaussianHMM.__init__(
             self,
             covariance_type="full",

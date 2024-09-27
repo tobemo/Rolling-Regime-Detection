@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from my_vhmm import MyVariationalGaussianHMM
+from my_vhmm import VariationalGaussianHMM
 from regime import RegimeClassifier
 
 
@@ -30,7 +30,7 @@ def rc() -> RegimeClassifier:
 def rc_populated() -> RegimeClassifier:
     rc = RegimeClassifier(n_components=3)
     rc.models.append(
-        MyVariationalGaussianHMM(n_components=rc.n_components)
+        VariationalGaussianHMM(n_components=rc.n_components)
     )
     return rc
 

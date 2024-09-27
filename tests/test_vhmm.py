@@ -1,4 +1,4 @@
-from my_vhmm import MyVariationalGaussianHMM
+from my_vhmm import VariationalGaussianHMM
 import pytest
 import numpy as np
 import pandas as pd
@@ -18,14 +18,14 @@ ts = pd.date_range(end=pd.Timestamp.now(), freq='D', periods=len(X))
 
 
 @pytest.fixture
-def trained_model() -> MyVariationalGaussianHMM:
-    obj = MyVariationalGaussianHMM(n_components=4, n_iter=10)
+def trained_model() -> VariationalGaussianHMM:
+    obj = VariationalGaussianHMM(n_components=4, n_iter=10)
     obj.fit(X[:, None])
     return obj
 
 
 def test_init():
-    obj = MyVariationalGaussianHMM()
+    obj = VariationalGaussianHMM()
 
 
 def test_check(trained_model):
@@ -37,7 +37,7 @@ def test_check(trained_model):
     trained_model._check()
 
     # check if self._check is not disabled for unfitted models
-    obj = MyVariationalGaussianHMM(**trained_model.get_params())
+    obj = VariationalGaussianHMM(**trained_model.get_params())
     obj.n_features = trained_model.n_features
     obj.means_prior_ = np.array([])
     obj.means_posterior_ = np.array([])
@@ -47,20 +47,20 @@ def test_check(trained_model):
 
 def test_fit():
     # np
-    model = MyVariationalGaussianHMM(n_components=2)
+    model = VariationalGaussianHMM(n_components=2)
     model.fit(X[:, None]) 
     # pd
-    model = MyVariationalGaussianHMM(n_components=2)
+    model = VariationalGaussianHMM(n_components=2)
     X_ = pd.DataFrame(X)
     model.fit(X_)
     # pd with datetime index
-    model = MyVariationalGaussianHMM(n_components=2)
+    model = VariationalGaussianHMM(n_components=2)
     X_ = pd.DataFrame(X, index=ts)
     model.fit(X_)
 
 
 def test_timestamp():
-    model = MyVariationalGaussianHMM(n_components=2)
+    model = VariationalGaussianHMM(n_components=2)
     X_ = pd.DataFrame(X, index=ts)
     model.fit(X_)
     assert model.timestamp == X_.index[-1]
@@ -80,7 +80,7 @@ def test_predict(trained_model):
 
 def test_loading_config(trained_model):
     cfg = trained_model.get_fitted_params()
-    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
+    obj2 = VariationalGaussianHMM.set_fitted_params(cfg)
     cfg2 = obj2.get_fitted_params()
     cfg.pop('init_params')
     cfg2.pop('init_params')
@@ -89,7 +89,7 @@ def test_loading_config(trained_model):
 
 def test_loading_config_model_equality(trained_model):
     cfg = trained_model.get_fitted_params()
-    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
+    obj2 = VariationalGaussianHMM.set_fitted_params(cfg)
     assert obj2.means_ == pytest.approx(trained_model.means_)
     assert obj2.covars_ == pytest.approx(trained_model.covars_)
     assert obj2.startprob_ == pytest.approx(trained_model.startprob_)
@@ -98,7 +98,7 @@ def test_loading_config_model_equality(trained_model):
 
 def test_loading_config_prediction_equality(trained_model):
     cfg = trained_model.get_fitted_params()
-    obj2 = MyVariationalGaussianHMM.set_fitted_params(cfg)
+    obj2 = VariationalGaussianHMM.set_fitted_params(cfg)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
@@ -111,7 +111,7 @@ def test_to_json(trained_model):
 
 def test_from_json(trained_model):
     string = trained_model.to_json()
-    obj2 = MyVariationalGaussianHMM.from_json(string)
+    obj2 = VariationalGaussianHMM.from_json(string)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
@@ -120,7 +120,7 @@ def test_from_json(trained_model):
     # with mapping set
     trained_model.mapping = np.array([[0, 1, 2, 3], [1, 2, 3, 0]]).T
     string = trained_model.to_json()
-    obj2 = MyVariationalGaussianHMM.from_json(string)
+    obj2 = VariationalGaussianHMM.from_json(string)
 
     y0 = trained_model.predict(X[:, None])
     y1 = obj2.predict(X[:, None])
@@ -211,7 +211,7 @@ def test_mapping(trained_model):
     # hard to wrap my head around mapping over time
 
 def test_mapped_predictions():
-    model = MyVariationalGaussianHMM(n_components=4)
+    model = VariationalGaussianHMM(n_components=4)
     model.n_features = 1
     model.startprob_ = np.array([0.4, 0.3, 0.3])
     model.transmat_ = np.array([[0.1, 0.7, 0.2],
@@ -259,11 +259,11 @@ def test_mapped_predictions():
 
 
 def test_equality(trained_model):
-    other = MyVariationalGaussianHMM(n_components=trained_model.n_components)
+    other = VariationalGaussianHMM(n_components=trained_model.n_components)
     assert trained_model == trained_model
     assert not other == trained_model
 
-    other = MyVariationalGaussianHMM(n_components=trained_model.n_components)
+    other = VariationalGaussianHMM(n_components=trained_model.n_components)
     other.fit(np.random.rand(len(X))[:, None])
     other.mapping = np.array([[0,1,2,3],[1,2,3,0]]).T
 
@@ -285,7 +285,7 @@ def test_equality(trained_model):
     assert other == trained_model
 
     # unfitted models are the same if they have the same initialization
-    a =  MyVariationalGaussianHMM(n_components=3)
-    b = MyVariationalGaussianHMM(n_components=3)
+    a =  VariationalGaussianHMM(n_components=3)
+    b = VariationalGaussianHMM(n_components=3)
     assert a == b
 

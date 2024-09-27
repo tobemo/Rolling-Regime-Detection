@@ -1,7 +1,7 @@
-from base import MyHMM
+from base import HMMBase
 import pytest
 
 
 def test_init():
-    obj = MyHMM()
+    obj = HMMBase()
 

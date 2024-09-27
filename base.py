@@ -1,7 +1,6 @@
 import json
 import time
 from abc import ABC
-from copy import deepcopy
 from typing import Optional
 
 import numpy as np
@@ -31,7 +30,7 @@ def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
         )
 
 
-class MyHMM(ABC):
+class HMMBase(ABC):
     @property
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
@@ -244,7 +243,7 @@ class MyHMM(ABC):
             super()._check()
     
     def __eq__(self, other) -> bool:
-        if not issubclass(type(other), MyHMM):
+        if not issubclass(type(other), HMMBase):
             return False
         if not self.is_fitted and not other.is_fitted:
             return self._compare_unfitted(other)
