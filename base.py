@@ -67,15 +67,6 @@ class MyHMM(ABC):
     def mapping(self, m: np.ndarray) -> None:
         _validate_mapping(m, self.n_components)
         self._mapping = m
-    @property
-    def mapper(self) -> dict:
-        """A mapping dict where keys are the from and values are the to.
-        """
-        # turn 2 array into dict with first col being keys
-        # and second col being values
-        return dict(
-            zip(*self.mapping.T.tolist())
-        )
     
     def __init__(self) -> None:
         super().__init__()
@@ -141,7 +132,7 @@ class MyHMM(ABC):
         ) -> np.ndarray | pd.Series:
         """Find most likely state sequence corresponding to ``X``.
         This call is without mapping, under the hood it just calls the original predict method.."""
-        assert self.is_fitted, "Model is not fitted."
+        check_is_fitted(self)
         predictions = super().predict(X, lengths=lengths)
         if isinstance(X, pd.DataFrame):
             predictions = pd.Series(predictions, index=X.index, name='Regime')
@@ -181,7 +172,7 @@ class MyHMM(ABC):
             raise NotImplementedError(
                 "Using predict_proba while having a mapper set is not supported."
             )
-        assert self.is_fitted, "Model is not fitted."
+        check_is_fitted(self)
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
         probas = probas[:, reordering]
@@ -212,13 +203,16 @@ class MyHMM(ABC):
         Can be used to initialize this class to an already fitted, and ready to use, model; when using MyHMM.set_fitted_params()
         
         This enables serialization and persistence."""
-        config = {
-            "timestamp_": self.timestamp_,
-            "transition_cost": self.transition_cost
-        }
-        if hasattr(self, "mapping"):
-            config["mapping"] = self.mapping.tolist()
-        return config
+        check_is_fitted(self, 'timestamp_')
+        params = self.get_params()
+        params.update(
+            {
+                "timestamp_": self.timestamp_,
+                "transition_cost": self.transition_cost,
+                "mapping": self.mapping.tolist()
+            }
+        )
+        return params
 
     def to_json(self) -> str:
         """Model to json string."""
@@ -226,19 +220,26 @@ class MyHMM(ABC):
         return json.dumps(config)
 
     @classmethod
-    @abstractmethod
-    def set_fitted_params(cls, config: dict):
-        pass
+    def set_fitted_params(cls, parameters: dict):
+        """Initialize a fitted MyVariationalGaussianHMM from a config."""
+        parameters = {
+            k: np.array(v) if type(v) == list else v
+            for k, v in parameters.items()
+        }
+        model = cls(n_components=parameters['n_components'])
+        for parameter, value in parameters.items():
+            setattr(model, parameter, value)
+        return model
         
     @classmethod
     def from_json(cls, config: str):
         """Model from json string."""
-        params = json.loads(params)
+        params = json.loads(config)
         return cls.set_fitted_params(params)
 
     def _check(self) -> None:
         # Don't call check on fitted models.
-        # Loading from config breaks `_check` because not all attributed needed for fitting are set.
+        # Loading from config breaks original `_check` because not all attributes set during fitting are needed for inference and hence not returned by `get_fitted_params()`.
         if not self.is_fitted:
             super()._check()
     

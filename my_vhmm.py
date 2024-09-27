@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 from hmmlearn.vhmm import VariationalGaussianHMM
+from sklearn.utils.validation import check_is_fitted
 
 from base import MyHMM
 
@@ -56,48 +57,20 @@ class MyVariationalGaussianHMM(MyHMM, VariationalGaussianHMM):
         )
 
     def get_fitted_params(self) -> dict:
-        config = super().get_fitted_params()
-        config.update(
+        check_is_fitted(self, 'startprob_')
+        params = super().get_fitted_params()
+        params.update(
             {
-                "n_components": self.n_components,
-                "init_params": "" if self.is_fitted else self.init_params,
-                "random_state": self.random_state,
-                "n_iter": self.n_iter,
-                "tol": self.tol,
-                "verbose": self.verbose,
+                "init_params": "" if self.is_fitted else self.init_params, # !
                 "covariance_type": self.covariance_type,
-                "startprob": self.startprob_.tolist(),
-                "transmat": self.transmat_.tolist(),
-                "means": self.means_.tolist(),
-                "covars": self.covars_.tolist(),
+                "startprob_": self.startprob_.tolist(),
+                "transmat_": self.transmat_.tolist(),
+                "means_": self.means_.tolist(),
+                "covars_": self.covars_.tolist(),
                 "n_features": self.n_features,
             }
         )
-        return config
-    
-    @classmethod
-    def set_fitted_params(cls, config: dict):
-        """Initialize a MyVariationalGaussianHMM from a config."""
-        model = cls(
-            n_components=config["n_components"],
-            init_params=config["init_params"],
-            random_state=config["random_state"],
-            n_iter=config["n_iter"],
-            tol=config["tol"],
-            verbose=config["verbose"],
-        )
-        model.n_features = config["n_features"]
-        model.transition_cost = config["transition_cost"]
-        if 'mapping' in config:
-            model.mapping = np.array(config["mapping"])
-        
-        # assign parameters
-        model.startprob_ = np.array(config["startprob"])
-        model.transmat_ = np.array(config["transmat"])
-        model.means_ = np.array(config["means"])
-        model.covars_ = np.array(config["covars"])
-
-        return model
+        return params
 
     def __eq__(self, other) -> bool:
         if not super().__eq__(other):
