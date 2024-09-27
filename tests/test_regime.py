@@ -49,9 +49,9 @@ def test_init():
 
 def test_properties_with_no_models(rc):
     with pytest.raises(AttributeError):
-        rc.model
+        rc.model_
     
-    assert isinstance(rc.classifier_config, dict)
+    assert isinstance(rc.get_params(), dict)
     assert not rc.has_models
     assert not rc.is_fitted
     assert rc.n_components == 3
@@ -59,8 +59,8 @@ def test_properties_with_no_models(rc):
 
 
 def test_properties_with_untrained_model(rc_populated):
-    rc_populated.model
-    assert isinstance(rc_populated.classifier_config, dict)
+    rc_populated.model_
+    assert isinstance(rc_populated.get_params(), dict)
 
     assert rc_populated.has_models
     assert not rc_populated.is_fitted
@@ -69,9 +69,9 @@ def test_properties_with_untrained_model(rc_populated):
 
 
 def test_properties_with_trained_model(rc_populated):
-    rc_populated.model.fit(X[:, None])
-    rc_populated.model.transition_cost = 3
-    assert isinstance(rc_populated.classifier_config, dict)
+    rc_populated.model_.fit(X[:, None])
+    rc_populated.model_.transition_cost = 3
+    assert isinstance(rc_populated.get_params(), dict)
 
     assert rc_populated.has_models
     assert rc_populated.is_fitted
@@ -81,17 +81,17 @@ def test_properties_with_trained_model(rc_populated):
 
 def test_model_setting_and_getting(rc):
     with pytest.raises(AttributeError):
-        rc.model
+        rc.model_
     with pytest.raises(IndexError):
         rc.models[-1]
 
-    rc.model = 'A'
-    rc.model = 'B'
-    rc.model = 'C'
-    rc.model = 'D'
+    rc.model_ = 'A'
+    rc.model_ = 'B'
+    rc.model_ = 'C'
+    rc.model_ = 'D'
     assert rc.has_models
 
-    assert rc.model == 'D'
+    assert rc.model_ == 'D'
     assert rc.models[-1] == 'D'
 
     assert rc.models[0] == 'A'
@@ -101,19 +101,19 @@ def test_model_setting_and_getting(rc):
 
 
 def test_getitem(rc):
-    rc.model = 'A'
-    rc.model = 'B'
-    rc.model = 'C'
-    rc.model = 'D'
+    rc.model_ = 'A'
+    rc.model_ = 'B'
+    rc.model_ = 'C'
+    rc.model_ = 'D'
 
     rc2 = rc[2]
-    assert rc2.model == 'C'
+    assert rc2.model_ == 'C'
     rc2 = rc[-2]
-    assert rc2.model == 'C'
+    assert rc2.model_ == 'C'
     rc2 = rc[0]
-    assert rc2.model == 'A'
+    assert rc2.model_ == 'A'
     rc2 = rc[-1]
-    assert rc2.model == 'D'
+    assert rc2.model_ == 'D'
 
 
 def test_initial_fit():
@@ -133,7 +133,7 @@ def test_transition_threshold(rc, rc_populated):
     assert rc.transition_threshold == np.inf
 
     # < 8 models
-    rc_populated.model.transition_cost = 3
+    rc_populated.model_.transition_cost = 3
     assert rc_populated.transition_threshold == 1.2 * 3
     
     # setting
@@ -143,7 +143,7 @@ def test_transition_threshold(rc, rc_populated):
     assert rc.transition_threshold == np.inf
 
     # > 8 models
-    model = rc_populated.model
+    model = rc_populated.model_
     model.transition_cost = 3
     for _ in range(8):
         rc.models.append(model)
@@ -188,8 +188,8 @@ def test_predict_all(rc_fitted):
     )
     
     # test index
-    rc_fitted.models[0].timestamp = X_.index[2]
-    rc_fitted.models[1].timestamp = X_.index[-3]
+    rc_fitted.models[0].timestamp_ = X_.index[2].isoformat()
+    rc_fitted.models[1].timestamp_ = X_.index[-3].isoformat()
     y = rc_fitted.predict_all(X_)
     pd.testing.assert_index_equal(y.index, X_.index)
     
@@ -214,7 +214,7 @@ def test_equality(rc_fitted, rc):
 
 def test_json(rc, rc_fitted):
     string = rc_fitted.classifier_to_json()
-    assert rc_fitted.classifier_config == json.loads(string)
+    assert rc_fitted.get_params() == json.loads(string)
 
     models = rc_fitted.models_to_jsons()
     assert isinstance(models, list)
