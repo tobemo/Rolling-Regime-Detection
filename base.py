@@ -197,14 +197,19 @@ class MyHMM(ABC):
 
     def get_params(self, deep: bool = False) -> dict:
         """Returns creation config."""
-        return deepcopy({
+        return {
             "n_components": self.n_components,
             "init_params": self.init_params,
             "random_state": self.random_state,
             "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
-        })
+        }
+    
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
 
     def get_fitted_params(self) -> dict:
         """Get dictionary that exactly describes this model.
