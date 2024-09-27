@@ -83,12 +83,6 @@ class MyHMM(ABC):
         """HMM model to use."""
         pass
     
-    @property
-    @abstractmethod
-    def get_params(self):
-        """Config for HMM model."""
-        pass
-    
     def __init__(self) -> None:
         super().__init__()
         self._transition_cost = np.inf
@@ -100,7 +94,7 @@ class MyHMM(ABC):
         ):
         score = -np.inf
         model = None
-        config = self.get_params
+        config = self.get_params()
         for i in range(1, k+1):
             config['random_state'] = np.random.randint(1e6)
             _model = self.HMM(**config)
@@ -220,7 +214,7 @@ class MyHMM(ABC):
         
         This enables serialization and persistence."""
         config = {
-            "timestamp": self.timestamp_,
+            "timestamp_": self.timestamp_,
             "transition_cost": self.transition_cost
         }
         if hasattr(self, "mapping"):
@@ -262,7 +256,7 @@ class MyHMM(ABC):
         keys_to_compare = ['n_components', 'init_params', 'n_iter', 'tol']
 
         return all([
-            self.init_config[k] == other.init_config[k] 
+            self.get_params()[k] == other.get_params()[k] 
             for k in keys_to_compare
         ])
     
