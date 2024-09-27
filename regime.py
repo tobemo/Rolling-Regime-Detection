@@ -286,15 +286,6 @@ class RegimeClassifier():
         
         # model 1: previous model
         previous_model = copy_model(self.model_)
-        
-        # sample X
-        # TODO; ideally new data in X is used in it's entirety
-        # maybe this shouldn't be done here but externally?
-        X = sample_by(
-            X=X,
-            Z=previous_model.predict(X, lengths=lengths),
-            f=0.5, # ! TODO HC
-        )
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
