@@ -277,8 +277,8 @@ class RegimeClassifier():
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
             old_model=self.model,
-            n_iter=max(10, self.models[0].n_iter // 10),
-            tol=1e-3,
+            n_iter=max(10, self.models[0].n_iter // 2),
+            tol=min(1e-2, self.models[0].tol * 100),
         )
         try:
             new_model.fit(X, lengths=lengths)
@@ -292,9 +292,9 @@ class RegimeClassifier():
         # model 3: transfer learn but add one extra regime
         new_model_with_added_regime = transfer_model(
             old_model=previous_model,
-            n_components = previous_model.n_components + 1,
-            n_iter=max(10, self.models[0].n_iter // 10),
-            tol=1e-3,
+            n_components=previous_model.n_components + 1,
+            n_iter=max(10, self.models[0].n_iter // 2),
+            tol=min(1e-2, self.models[0].tol * 100),
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
