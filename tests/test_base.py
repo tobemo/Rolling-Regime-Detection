@@ -4,4 +4,6 @@ import pytest
 
 def test_init():
     obj = HMMBase()
+    str(obj)
+    repr(obj)
 

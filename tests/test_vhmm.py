@@ -26,6 +26,8 @@ def trained_model() -> VariationalGaussianHMM:
 
 def test_init():
     obj = VariationalGaussianHMM()
+    str(obj)
+    repr(obj)
 
 
 def test_check(trained_model):

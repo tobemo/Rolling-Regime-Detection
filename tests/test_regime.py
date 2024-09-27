@@ -45,6 +45,8 @@ def rc_fitted() -> RegimeClassifier:
 
 def test_init():
     rc = RegimeClassifier(n_components=3)
+    str(rc)
+    repr(rc)
 
 
 def test_properties_with_no_models(rc):
