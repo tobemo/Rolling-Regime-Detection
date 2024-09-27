@@ -1,5 +1,5 @@
 import pytest
-from my_vhmm import MyVariationalGaussianHMM
+from hmm.vghmm import VariationalGaussianHMM
 from regime import get_transition_cost_matrix, get_regime_map, calculate_total_cost
 
 import numpy as np
@@ -50,9 +50,9 @@ def Zs(Z) -> list[np.ndarray]:
 
 
 @pytest.fixture
-def model_0(Xs, Zs) -> MyVariationalGaussianHMM:
+def model_0(Xs, Zs) -> VariationalGaussianHMM:
     """A model with 2 components."""
-    model = MyVariationalGaussianHMM(n_components=2)
+    model = VariationalGaussianHMM(n_components=2)
     model.fit(Xs[0])
     return model
 
@@ -60,7 +60,7 @@ def model_0(Xs, Zs) -> MyVariationalGaussianHMM:
 def test_map(model_0, Xs, Zs):
     X, Z = Xs[0], Zs[0]
     for i in range(10):
-        model_1 = MyVariationalGaussianHMM(n_components=2, random_state=i)
+        model_1 = VariationalGaussianHMM(n_components=2, random_state=i)
         model_1.fit(X)
         tcm = get_transition_cost_matrix(
             old_regimes=model_0.predict(X),
@@ -85,7 +85,7 @@ def _test_mapping_long_term(model_0, Xs):
     model_a = model_0
     for X in Xs[1:]:
         # add a regime each iteration
-        model_b = MyVariationalGaussianHMM(
+        model_b = VariationalGaussianHMM(
             n_components=model_a.n_components + 1
         )
         model_b.fit(X)
@@ -115,11 +115,11 @@ def _test_mapping_long_term(model_0, Xs):
     pass
 
 
-def train_model(n_components: int, X: np.ndarray) -> MyVariationalGaussianHMM:
+def train_model(n_components: int, X: np.ndarray) -> VariationalGaussianHMM:
     _score = -np.inf
     model = None
     for i in range(5):
-        _model = MyVariationalGaussianHMM(
+        _model = VariationalGaussianHMM(
             n_components=n_components,
             random_state=i
         )

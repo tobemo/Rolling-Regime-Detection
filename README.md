@@ -1,6 +1,10 @@
 # Rolling regime detection
 My implementation of "Robust Rolling Regime Detection (R2-Rd): A Data-Driven Perspective of Financial Markets" by Ali Hirsa, Sikun Xu and Satyan Malhotra.
 
+When time series data does not have temporally stable regimes, fitting one hidden Markov model on all data will prove to be suboptimal.
+This code base implements a regime classifier which updates over time, adding regimes as needed.
+See paper for more details.
+
 ## Adjustments
 The paper uses distance metrics both for label assignment an regime emergence but I don't agree on the second point, or at least not with how I have implemented the transition cost matrix.
 

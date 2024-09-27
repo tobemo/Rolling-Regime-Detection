@@ -6,7 +6,7 @@ logging.getLogger('PIL').setLevel(logging.WARNING)
 
 from matplotlib import pyplot as plt
 
-from my_vhmm import MyVariationalGaussianHMM
+from hmm.vghmm import VariationalGaussianHMM
 from plotting_utils import plot_multiple_with_regimes
 from regime import RegimeClassifier
 

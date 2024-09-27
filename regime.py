@@ -1,7 +1,6 @@
 import json
 import os
 from collections import deque
-from copy import deepcopy
 from logging import Logger, getLogger
 from typing import Optional
 
@@ -10,8 +9,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 
-from base import MyHMM
-from my_vhmm import MyVariationalGaussianHMM
+from hmm.base import HMMBase
+from hmm.vghmm import VariationalGaussianHMM
 from utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
                    get_regime_map, get_transition_cost_matrix,
                    new_model_collapsed, transfer_model, sample_by)
@@ -45,34 +44,31 @@ class RegimeClassifier():
         """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`.
         If n_components is a list of int then the best number of regimes from that list is detected.
         If n_components is an int >0 then that number of regimes is used."""
-        self.name = 'root' or name
+        self.name = name or 'foo'
+        self.n_components = n_components
+        self.n_iter = n_iter
+        self.tol = tol
+        self.verbose = verbose
+
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
-        self._classifier_config = dict(
-            n_components=n_components,
-            n_iter=n_iter,
-            tol=tol,
-            verbose=verbose,
-        )
-        self._n_components = n_components
-        self.scores = []
     
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(n_components={self.n_components})"
+        return f"{self.__class__.__name__}({json.dumps(self.get_params())})"
     
     @property
     def logger(self) -> Logger:
         return getLogger(self.__class__.__name__).getChild(self.name)
     
-    models: deque[MyHMM]
+    models: deque[HMMBase]
     """List of all trained models."""
     @property
-    def model(self) -> MyHMM:
+    def model_(self) -> HMMBase:
         """Last trained model."""
         if not self.has_models:
             raise AttributeError("RegimeClassifier currently tracks 0 models.")
         return self.models[-1]
-    @model.setter
-    def model(self, model) -> None:
+    @model_.setter
+    def model_(self, model) -> None:
         """Store new model into model list."""
         self.models.append(model)
         self.logger.info(
@@ -92,17 +88,36 @@ class RegimeClassifier():
             rc.models.append(model)
         return rc
 
-    _classifier_config: dict
-    @property
-    def classifier_config(self) -> dict:
+    def get_params(self, deep: bool = False) -> dict:
         """Config used to create RegimeClassifier object."""
-        return deepcopy(self._classifier_config)
+        params = {
+            'n_components': self.n_components,
+            'n_iter': self.n_iter,
+            'tol': self.tol,
+            'verbose': self.verbose,
+            'name': self.name,
+        }
+        if deep and self.is_fitted:
+            extra_params = {
+                f"{type(self.model_).__name__}__{k}": v
+                for k, v in self.model_.get_params()
+            }
+            params.update(extra_params)
+
+        return params
+    
+    def set_params(self, **parameters):
+        self.models.clear()
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+            return self
+
     @property
     def last_model_config(self) -> dict:
         """The config of the latest model."""
         if self.has_models:
-           return self.models[-1].init_config
-        return self.classifier_config
+           return self.models[-1].get_params()
+        return self.get_params()
     
     @property
     def has_models(self) -> bool:
@@ -112,15 +127,12 @@ class RegimeClassifier():
     def is_fitted(self) -> bool:
         """Last model is fitted."""
         if self.has_models:
-            return self.model.is_fitted
+            return self.model_.is_fitted
         return False
     
-    @property
-    def n_components(self) -> int:
-        """Number of components of last model."""
-        if self.has_models:
-            return self.model.n_components
-        return self._n_components
+    def __sklearn_is_fitted__(self) -> bool:
+        # https://scikit-learn.org/stable/developers/develop.html#developer-api-for-check-is-fitted
+        return self.is_fitted
     
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
@@ -157,8 +169,8 @@ class RegimeClassifier():
     def initial_fit(
             self,
             X: np.ndarray | pd.DataFrame,
-            lengths: Optional[list[int]]=None,
-            k: int = 10
+            lengths: Optional[list[int]] = None,
+            k: int = 10,
         ) -> None:
         """Train k models and keep best one.
         This is needed to account for gradient descent getting stuck in a local minima. 
@@ -166,7 +178,7 @@ class RegimeClassifier():
         This model will then be the starting point for all future fits.
         
         If n_components in _first_config is -1 the best regime is auto-detected. Only 2-9 are considered for n_components."""
-        regimes = self.classifier_config['n_components']
+        regimes = self.get_params()['n_components']
         if regimes == -1:
             regimes = [2, 3, 4, 5, 6, 7, 8, 9]
         elif isinstance(regimes, int):
@@ -178,11 +190,21 @@ class RegimeClassifier():
         for regime in regimes:
             # first find the best initialization 
             # for the current number of regimes
-            cfg = self.classifier_config
+            cfg = self.get_params()
+            cfg.pop('name')
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
-            sub_model = MyVariationalGaussianHMM(**cfg)
-            sub_model.fit(X, lengths=lengths, k=k)
+            sub_model = VariationalGaussianHMM(**cfg)
+            try:
+                sub_model.fit(X, lengths=lengths, k=k)
+            except Exception as e:
+                # raise on last fit only, and only if no model has been fitted
+                if not best_model and regime == regimes[-1]:
+                    raise e
+                else: # just continue
+                    self.logger.error(f"Failed to fit {regime} regimes.")
+                    self.logger.error(e)
+                    continue
             
             # then only keep the best model of all regimes by computing 
             # the silhouette score for the best model in this regime
@@ -198,18 +220,54 @@ class RegimeClassifier():
                 best_silhouette_score = this_silhouette_score
         
         # ensure a decent model has actually been fitted
-        # failure is each model consistently only detecting one regime
+        # failure can be each model consistently only detecting one regime
         if not best_model:
             raise RuntimeError('Failed to fit even one working model.')
-        self.model = best_model
+        
+        self.model_ = best_model
+        self.n_features_in_ = X.shape[1]
         self.logger.info(
-            f"Initial fit found best number of regimes to be {self.model.n_components}"
+            f"Initial fit found best number of regimes to be {self.model_.n_components}"
         )
+    
+    def _handle_failed_fit(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            lengths: Optional[list[int]]=None,
+        ) -> None:
+        """Logic to handle and track failed fits."""
+        # initialize counter if needed and store original value
+        if not hasattr(self, '_n_allowed_fails'):
+            self._n_allowed_fails = getattr(
+                self,
+                'fit_can_fail_this_many_times',
+                default=6
+            )
+            self.fit_can_fail_this_many_times = self._n_allowed_fails
+        
+        # decrease counter on each fail
+        self.fit_can_fail_this_many_times -= 1
+        if self.fit_can_fail_this_many_times > 0:
+            return
+    
+        self.logger.critical(
+            f"Fit failed too many times. Trying to clean slate by running initial_fit."
+        )
+
+        # catch initial fit failing
+        try:
+            self.initial_fit(X, lengths=lengths)
+        except Exception as e:
+            self.logger.critical("Initial fit failed as well, now stuck with last working model for a while.")
+            self.logger.exception(e)
+            # reset counter
+            self.fit_can_fail_this_many_times = self._n_allowed_fails
 
     def fit(
             self,
             X: np.ndarray | pd.DataFrame,
-            lengths: Optional[list[int]]=None
+            y = None,
+            lengths: Optional[list[int]]=None,
         ) -> None:
         """Fit two new regime models, one with the same amount of regimes and one with one more. The one that has the cheapest transition costs, compared to the previous regime classifier, is used.
 
@@ -227,7 +285,7 @@ class RegimeClassifier():
             return self.initial_fit(X, lengths=lengths)
         
         # model 1: previous model
-        previous_model = copy_model(self.model)
+        previous_model = copy_model(self.model_)
         
         # sample X
         # TODO; ideally new data in X is used in it's entirety
@@ -240,9 +298,16 @@ class RegimeClassifier():
 
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
-            old_model=self.model,
+            old_model=self.model_,
         )
-        new_model.fit(X, lengths=lengths)
+        try:
+            new_model.fit(X, lengths=lengths)
+        except Exception as e:
+            self.logger.warning("Fit failed, reusing previous model.")
+            self.logger.exception(e)
+            self.model_ = previous_model
+            self._handle_failed_fit(X, lengths=lengths)
+            return self
 
         # model 3: transfer learn but add one extra regime
         new_model_with_added_regime = transfer_model(
@@ -259,37 +324,19 @@ class RegimeClassifier():
         )
 
         # log
-        sil_prev = silhouette_score(
-            X, previous_model.predict(X, lengths=lengths)
-        )
-        sil_new = silhouette_score(
-            X, new_model.predict(X, lengths=lengths)
-        )
-        sil_new_with_added_regime = silhouette_score(
-            X, new_model_with_added_regime.predict(X, lengths=lengths)
-        )
         self.logger.debug(
             f"BIC scores are: {bic_prev, bic_new, bic_new_with_added_regime}."
         )
-        self.logger.debug(
-            f"Silhouette scores are: {sil_prev, sil_new, sil_new_with_added_regime}."
-        )
-        self.scores.append({
-            'prev': (bic_prev, sil_prev),
-            'new': (bic_new, sil_new),
-            'extra': (bic_new_with_added_regime, sil_new_with_added_regime),
-        })
-
         # determine best model
         if bic_prev < bic_new and bic_prev < bic_new_with_added_regime:
-            self.model = previous_model
+            self.model_ = previous_model
             self.logger.info("Reusing previous model.")
             return # nothing more is needed
         
         elif bic_new_with_added_regime < bic_new:
             best_model = new_model_with_added_regime
             self.logger.info(
-                f"Upped from {self.n_components} to {best_model.n_components} regimes."
+                f"Upped from {self.model_.n_components} to {best_model.n_components} regimes."
             )
         else:
             best_model = new_model
@@ -330,7 +377,7 @@ class RegimeClassifier():
         )
                 
         # store best model
-        self.model = best_model
+        self.model_ = best_model
         return self
     
     def predict(
@@ -339,11 +386,30 @@ class RegimeClassifier():
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.DataFrame:
         """Find most likely state sequence corresponding to X of the last trained model."""
-        return self.model.predict(X, lengths=lengths)
+        return self.model_.predict(X, lengths=lengths)
+    
+    def score(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            y = None,
+            lengths: Optional[list[int]]=None,
+    ) -> float:
+        return self.model_.bic(X, lengths=lengths)
     
     def fit_predict(
             self,
             X: np.ndarray | pd.DataFrame,
+            y = None,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray | pd.DataFrame:
+        """Chains `fit` and `predict`."""
+        self.fit(X, lengths=lengths)
+        return self.predict(X, lengths=lengths)
+                            
+    def fit_transform(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            y = None,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.DataFrame:
         """Chains `fit` and `predict`."""
@@ -356,7 +422,7 @@ class RegimeClassifier():
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.DataFrame:
         """Compute the posterior probability for each state of the last trained model."""
-        return self.model.predict_proba(X, lengths=lengths)
+        return self.model_.predict_proba(X, lengths=lengths)
     
     def predict_all(
             self,
@@ -375,7 +441,7 @@ class RegimeClassifier():
         predictions.columns.name = 'Model'
 
         ends = [
-            pd.Timestamp(model.timestamp, unit='s', tz=X.index.tz)
+            pd.Timestamp(model.timestamp_, unit='s', tz=X.index.tz)
             for model in self.models
         ]
         ends = X.index.get_indexer(ends)
@@ -389,14 +455,14 @@ class RegimeClassifier():
     @classmethod
     def from_json(cls, config: str):
         # create regime classifier object
-        config = json.loads(config)
-        regime_classifier = cls(**config)
+        params = json.loads(config)
+        regime_classifier = cls(**params)
         return regime_classifier
     
     def add_models_from_json(self, configs: list[str]) -> None:
         # load models and sort by timestamp
         configs = configs[-self.models.maxlen:]
-        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
+        models = [VariationalGaussianHMM.from_json(cfg) for cfg in configs]
         models.sort(key=lambda m: m.timestamp)
 
         # add to regime classifier
@@ -408,15 +474,7 @@ class RegimeClassifier():
         """Fill `self.models` with MyVariationalGaussianHMM initialized using a json string."""
         # create regime classifier object
         regime_classifier = cls.from_json(classifier_config)
-
-        # load models and sort by timestamp
-        configs = configs[-regime_classifier.models.maxlen:]
-        models = [MyVariationalGaussianHMM.from_json(cfg) for cfg in configs]
-        models.sort(key=lambda m: m.timestamp)
-
-        # add to regime classifier
-        for model in models:
-            regime_classifier.models.append(model)
+        regime_classifier.add_models_from_json(configs)
         
         return regime_classifier
     
@@ -428,7 +486,7 @@ class RegimeClassifier():
     
     def classifier_to_json(self) -> str:
         """Returns initial kwargs, used to initialize this RegimeClassifier object, as a json string."""
-        return json.dumps(self.classifier_config)
+        return json.dumps(self.get_params())
     
     def models_to_jsons(self) -> list[str]:
         """Returns a dict of all tracked models as jsons. Keys are the creation times of each model."""
@@ -439,10 +497,10 @@ class RegimeClassifier():
             return False
         
         if not self.is_fitted and not other.is_fitted:
-            return self.classifier_config == other.classifier_config
+            return self.get_params() == other.get_params()
         
         if self.has_models and other.has_models:
-            cond_a = self.model == other.model
+            cond_a = self.model_ == other.model_
             cond_b = self.transition_threshold == other.transition_threshold
             return cond_a & cond_b
         
@@ -453,10 +511,11 @@ class RegimeClassifier():
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
     ) -> plt.Axes:
-        ax = self.model.scatter(X, lengths=legnths)
+        ax = self.model_.scatter(X, lengths=lengths)
         plt.figtext(
             0.99, 0.01,
             'Using hindsight bias!',
             horizontalalignment='right'
         )
         return ax
+

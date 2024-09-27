@@ -1,7 +1,6 @@
 import json
 import time
-from abc import ABC, abstractmethod
-from copy import deepcopy
+from abc import ABC
 from typing import Optional
 
 import numpy as np
@@ -9,6 +8,7 @@ import pandas as pd
 from hmmlearn import hmm
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.utils.validation import check_is_fitted
 
 
 def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
@@ -30,7 +30,7 @@ def _validate_mapping(mapping: np.ndarray, n_components: int) -> None:
         )
 
 
-class MyHMM(ABC):
+class HMMBase(ABC):
     @property
     def is_fitted(self) -> bool:
         return hasattr(self, 'transmat_')
@@ -44,8 +44,12 @@ class MyHMM(ABC):
     def transition_cost(self, cost: float) -> None:
         self._transition_cost = cost
 
-    timestamp: int
+    timestamp_: str
     """Fit time."""
+    @property
+    def timestamp(self) -> pd.Timestamp:
+        check_is_fitted(self)
+        return pd.to_datetime(self.timestamp_) #fromisoformat drops tz
 
     _mapping: np.ndarray
     @property
@@ -62,33 +66,9 @@ class MyHMM(ABC):
     def mapping(self, m: np.ndarray) -> None:
         _validate_mapping(m, self.n_components)
         self._mapping = m
-    @property
-    def mapper(self) -> dict:
-        """A mapping dict where keys are the from and values are the to.
-        """
-        # turn 2 array into dict with first col being keys
-        # and second col being values
-        return dict(
-            zip(
-                *self.mapping.T.tolist()
-            )
-        )
     
-    @property
-    @abstractmethod
-    def HMM(self):
-        """HMM model to use."""
-        pass
-    
-    @property
-    @abstractmethod
-    def HMM_config(self):
-        """Config for HMM model."""
-        pass
-    
-    def __init__(self, timestamp: int = None) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.timestamp = timestamp or int(time.time())
         self._transition_cost = np.inf
     
     def _multi_fit(self,
@@ -98,17 +78,24 @@ class MyHMM(ABC):
         ):
         score = -np.inf
         model = None
-        config = self.HMM_config
-        for _ in range(k):
+        config = self.get_params()
+        for i in range(1, k+1):
             config['random_state'] = np.random.randint(1e6)
-            _model = self.HMM(**config)
-            _model.fit(X, lengths)
+            _model = type(self)(**config)
+            try:
+                _model.fit(X, lengths)
+            except Exception as e:
+                # raise on last fit only, and only if no model has been fitted
+                if not model and i == k:
+                    raise e
+                continue
             _score = _model.score(X)
             if _score > score:
                 model = _model
                 score = _score
         
-        model = model or _model
+        if not model:
+            raise RuntimeError("Failed to fit a single model.")
         self.__dict__.update(model.__dict__)
         return self
         
@@ -124,10 +111,9 @@ class MyHMM(ABC):
         else:
             self._multi_fit(X, lengths, k)
     
-        self.timestamp = int(time.time())
+        self.timestamp_ = pd.Timestamp.now(tz='UTC').isoformat()
         if isinstance(X, pd.DataFrame) and isinstance(X.index,pd.DatetimeIndex):
-            self.timestamp = int(X.index[-1].timestamp())
-
+            self.timestamp_ = X.index[-1].isoformat()
         return self
     
     def map_predictions(self, predictions: np.ndarray) -> np.ndarray:
@@ -145,7 +131,7 @@ class MyHMM(ABC):
         ) -> np.ndarray | pd.Series:
         """Find most likely state sequence corresponding to ``X``.
         This call is without mapping, under the hood it just calls the original predict method.."""
-        assert self.is_fitted, "Model is not fitted."
+        check_is_fitted(self)
         predictions = super().predict(X, lengths=lengths)
         if isinstance(X, pd.DataFrame):
             predictions = pd.Series(predictions, index=X.index, name='Regime')
@@ -185,7 +171,7 @@ class MyHMM(ABC):
             raise NotImplementedError(
                 "Using predict_proba while having a mapper set is not supported."
             )
-        assert self.is_fitted, "Model is not fitted."
+        check_is_fitted(self)
         probas = super().predict_proba(X, lengths=lengths)
         reordering = self.mapping[:,1]
         probas = probas[:, reordering]
@@ -193,58 +179,71 @@ class MyHMM(ABC):
             probas = pd.DataFrame(probas, index=X.index)
         return probas
 
-    @property
-    def init_config(self) -> dict:
+    def get_params(self, deep: bool = False) -> dict:
         """Returns creation config."""
-        return deepcopy({
+        return {
             "n_components": self.n_components,
             "init_params": self.init_params,
             "random_state": self.random_state,
             "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
-            "timestamp": self.timestamp
-        })
+        }
+    
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
 
-    def get_config(self) -> dict:
-        """Get config that exactly describes this model.
-        This not only includes thins like creation time and number of components but also things like start probabilities.
+    def get_fitted_params(self) -> dict:
+        """Get dictionary that exactly describes this model.
+        This not only includes things like creation time and number of components but also things like start probabilities.
         
-        Can be used to initialize this class to an already fitted, and ready to use, model; when using MyVariationalGaussianHMM.from_config()
+        Can be used to initialize this class to an already fitted, and ready to use, model; when using MyHMM.set_fitted_params()
         
         This enables serialization and persistence."""
-        config = {
-            "timestamp": self.timestamp,
-            "transition_cost": self.transition_cost
-        }
-        if hasattr(self, "mapping"):
-            config["mapping"] = self.mapping.tolist()
-        return config
+        check_is_fitted(self, 'timestamp_')
+        params = self.get_params()
+        params.update(
+            {
+                "timestamp_": self.timestamp_,
+                "transition_cost": self.transition_cost,
+                "mapping": self.mapping.tolist()
+            }
+        )
+        return params
 
     def to_json(self) -> str:
         """Model to json string."""
-        config = self.get_config()
+        config = self.get_fitted_params()
         return json.dumps(config)
 
     @classmethod
-    @abstractmethod
-    def from_config(cls, config: dict):
-        pass
+    def set_fitted_params(cls, parameters: dict):
+        """Initialize a fitted MyVariationalGaussianHMM from a config."""
+        parameters = {
+            k: np.array(v) if type(v) == list else v
+            for k, v in parameters.items()
+        }
+        model = cls(n_components=parameters['n_components'])
+        for parameter, value in parameters.items():
+            setattr(model, parameter, value)
+        return model
         
     @classmethod
     def from_json(cls, config: str):
         """Model from json string."""
-        config = json.loads(config)
-        return cls.from_config(config)
+        params = json.loads(config)
+        return cls.set_fitted_params(params)
 
     def _check(self) -> None:
         # Don't call check on fitted models.
-        # Loading from config breaks `_check` because not all attributed needed for fitting are set.
+        # Loading from config breaks original `_check` because not all attributes set during fitting are needed for inference and hence not returned by `get_fitted_params()`.
         if not self.is_fitted:
             super()._check()
     
     def __eq__(self, other) -> bool:
-        if not issubclass(type(other), MyHMM):
+        if not issubclass(type(other), HMMBase):
             return False
         if not self.is_fitted and not other.is_fitted:
             return self._compare_unfitted(other)
@@ -256,7 +255,7 @@ class MyHMM(ABC):
         keys_to_compare = ['n_components', 'init_params', 'n_iter', 'tol']
 
         return all([
-            self.init_config[k] == other.init_config[k] 
+            self.get_params()[k] == other.get_params()[k] 
             for k in keys_to_compare
         ])
     
@@ -357,20 +356,21 @@ class MyHMM(ABC):
         Z = self.predict(X)
         return self._scatter_2D(X=X, Z=Z)
 
-    def scatter_nD(self,
+    def scatter_nD(
+        self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
-    ) -> plt.Axes:
+        ) -> plt.Axes:
         """Emits regimes for X then reduces X, using t-SNE, and plots a scatter plot plus a histogram."""
         Z = self.predict(X)
-        X_embedded = TSNE(n_components).fit_transform(X)
+        X_embedded = TSNE(self.n_components).fit_transform(X)
         return self._scatter_2D(X=X_embedded, Z=Z)        
 
     def scatter(
         self,
         X: np.ndarray | pd.DataFrame,
         lengths: Optional[list[int]]=None
-    ) -> plt.Axes:
+        ) -> plt.Axes:
         """Plot regime data."""
         if X.shape[1] == 1:
             return self.scatter_1D(X, lengths=lengths)
@@ -378,3 +378,4 @@ class MyHMM(ABC):
             return self.scatter_2D(X, lengths=lengths)
         else:
             return self.scatter_nD(X, lengths=lengths)
+

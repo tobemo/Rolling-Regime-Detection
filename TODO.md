@@ -76,7 +76,17 @@
     - ~2 hours per
 - [x] tests for time index
 - [x] test for predict all
-- [ ] test plotting
 - [ ] hybrid sampling:
     - use all last $n$ samples
     - use time decay for all samples before $n$
+- [x] test plotting
+- [x] handle models raising during fit.
+- [ ] speed up fitting
+- [ ] split up fit into sub calls
+- [ ] **test catastrophic fit failures**
+	- [ ] initial fit
+	- [ ] online fit
+	- [ ] initial fit after online fit
+- [ ] determine what state info of RegimeClassifier I want to write to file in regards to fault recovery
+	- n_failed_fits?
+	- name
