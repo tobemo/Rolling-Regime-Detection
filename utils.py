@@ -84,8 +84,8 @@ def extend_transmat(transmat: np.ndarray, extension: int) -> np.ndarray:
 
 def copy_model(model: MyHMM) -> MyHMM:
     """Copy model as is."""
-    config = model.get_fitted_params()
-    new_model = type(model).set_fitted_params(config)
+    params = model.get_fitted_params()
+    new_model = type(model).set_fitted_params(params)
     return new_model
 
 
@@ -97,17 +97,17 @@ def transfer_model(
         ) -> MyHMM:
     """Return a new model of the same type as old model with its transition matrix and start probabilities copied over.
     If `n_component` is greater than `old_model.n_component` then one or more regimes are added."""
-    config = old_model.init_config
-    config['n_components'] = n_components or config['n_components']
-    config['n_iter'] = n_iter or config['n_iter']
-    config['tol'] = tol or config['tol']
+    params = old_model.get_params()
+    params['n_components'] = n_components or params['n_components']
+    params['n_iter'] = n_iter or params['n_iter']
+    params['tol'] = tol or params['tol']
     
-    n_component_difference = config['n_components'] - old_model.n_components
+    n_component_difference = params['n_components'] - old_model.n_components
     if n_component_difference < 0:
         raise NotImplementedError("A reduction in the number of regimes is not supported.")
     
-    config['init_params'] = 'mc'
-    new_model = type(old_model)(**config)
+    params['init_params'] = 'mc'
+    new_model = type(old_model)(**params)
 
     startprob_ = old_model.startprob_
     transmat_ = old_model.transmat_
