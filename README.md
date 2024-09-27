@@ -20,7 +20,7 @@ Conclusion, as of 10/09/24, is to use cost solely for regime mapping, and aic&bi
 
 
 ## Known issues
-Numpy's 2. relaese seems to have broken hmmlearn. All predicted regimes default to one value only.
+Numpy's 2. release seems to have broken hmmlearn. All predicted regimes default to one value only.
 Fixed by downgrading numpy to the latest 1. release: 1.26.4.
 
 https://github.com/hmmlearn/hmmlearn/issues/557

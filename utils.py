@@ -281,7 +281,7 @@ def sample_by(
         X (np.ndarray | pd.DataFrame): Matrix to sample.
         Z (np.ndarray | pd.Series): Vector holding information on class
         f (float): Fraction of X to sample. Each regime is sampled separately.
-        sample_probabilities (np.ndarray | pd.DataFrame): The probabilities associated with each entry in X. If not given, the sample assumes a uniform distribution over all entries in X. Samples are drawn per regime.
+        p (np.ndarray | pd.DataFrame): The probabilities associated with each entry in X. If not given, the sample assumes a uniform distribution over all entries in X. Samples are drawn per regime.
 
     Returns:
         np.ndarray | pd.DataFrame: Sampled data.
