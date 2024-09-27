@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from my_vhmm import VariationalGaussianHMM
+from hmm.vghmm import VariationalGaussianHMM
 from regime import RegimeClassifier
 
 

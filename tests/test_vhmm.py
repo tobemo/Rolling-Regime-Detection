@@ -1,4 +1,4 @@
-from my_vhmm import VariationalGaussianHMM
+from hmm.vghmm import VariationalGaussianHMM
 import pytest
 import numpy as np
 import pandas as pd

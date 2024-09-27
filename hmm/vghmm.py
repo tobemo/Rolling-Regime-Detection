@@ -6,7 +6,7 @@ import numpy as np
 from hmmlearn.vhmm import VariationalGaussianHMM as VGHMM
 from sklearn.utils.validation import check_is_fitted
 
-from base import HMMBase
+from hmm.base import HMMBase
 
 
 class VariationalGaussianHMM(HMMBase, VGHMM):
@@ -42,7 +42,7 @@ class VariationalGaussianHMM(HMMBase, VGHMM):
         ) -> None:
         """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kept, see `fit` and `multi_fit`.`"""
         HMMBase.__init__(self)
-        VariationalGaussianHMM.__init__(
+        VGHMM.__init__(
             self,
             covariance_type="full",
             algorithm="viterbi",

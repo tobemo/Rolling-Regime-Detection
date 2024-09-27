@@ -1,4 +1,4 @@
-from base import HMMBase
+from hmm.base import HMMBase
 import pytest
 
 

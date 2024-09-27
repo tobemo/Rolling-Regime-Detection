@@ -9,8 +9,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 
-from base import HMMBase
-from my_vhmm import VariationalGaussianHMM
+from hmm.base import HMMBase
+from hmm.vghmm import VariationalGaussianHMM
 from utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
                    get_regime_map, get_transition_cost_matrix,
                    new_model_collapsed, transfer_model)
