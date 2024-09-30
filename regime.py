@@ -39,7 +39,9 @@ class RegimeClassifier():
             n_iter: int = 100,
             tol: float = 1e-6,
             verbose: bool = False,
-            name: str = None
+            name: str = None,
+            successive_n_iter: int = None,
+            successive_tol: float = None,
         ):
         """If n_components is -1 the ideal number of regimes is auto-detected the first time fit is called, see `initial_fit`.
         If n_components is a list of int then the best number of regimes from that list is detected.
@@ -48,6 +50,8 @@ class RegimeClassifier():
         self.n_components = n_components
         self.n_iter = n_iter
         self.tol = tol
+        self.successive_n_iter = successive_n_iter or n_iter
+        self.successive_tol = successive_tol or tol
         self.verbose = verbose
 
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
@@ -96,6 +100,8 @@ class RegimeClassifier():
             'tol': self.tol,
             'verbose': self.verbose,
             'name': self.name,
+            'successive_n_iter': self.successive_n_iter,
+            'successive_tol': self.successive_tol,            
         }
         if deep and self.is_fitted:
             extra_params = {
@@ -192,6 +198,8 @@ class RegimeClassifier():
             # for the current number of regimes
             cfg = self.get_params()
             cfg.pop('name')
+            cfg.pop('successive_n_iter')
+            cfg.pop('successive_tol')
             cfg['init_params'] = 'stmc'
             cfg['n_components'] = regime
             sub_model = VariationalGaussianHMM(**cfg)
@@ -290,8 +298,8 @@ class RegimeClassifier():
         # model 2: transfer learn with same number of regimes as previous
         new_model = transfer_model(
             old_model=previous_model,
-            n_iter=max(10, self.models[0].n_iter // 2),
-            tol=min(1e-2, self.models[0].tol * 100),
+            n_iter=self.successive_n_iter,
+            tol=self.successive_tol,
         )
         try:
             new_model.fit(X, lengths=lengths)
@@ -306,8 +314,8 @@ class RegimeClassifier():
         new_model_with_added_regime = transfer_model(
             old_model=previous_model,
             n_components=previous_model.n_components + 1,
-            n_iter=max(10, self.models[0].n_iter // 2),
-            tol=min(1e-2, self.models[0].tol * 100),
+            n_iter=self.successive_n_iter,
+            tol=self.successive_tol,
         )
         new_model_with_added_regime.fit(X, lengths=lengths)
 
