@@ -6,13 +6,12 @@ logging.getLogger('PIL').setLevel(logging.WARNING)
 
 from matplotlib import pyplot as plt
 
-from hmm.vghmm import VariationalGaussianHMM
-from plotting_utils import plot_multiple_with_regimes
-from regime import RegimeClassifier
+from .hmm.vghmm import VariationalGaussianHMM
+from .plotting_utils import plot_multiple_with_regimes
 
 
 logging.basicConfig(level=logging.DEBUG)
-from regime import RegimeClassifier
+from .regime import RegimeClassifier
 
 
 np.random.seed(4)

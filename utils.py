@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import optimize, stats
 
-from hmm.base import HMMBase
+from .hmm.base import HMMBase
 
 
 def extend_startprob(startprob: np.ndarray, extension: int) -> np.ndarray:
