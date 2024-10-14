@@ -49,6 +49,14 @@ def test_init():
     repr(rc)
 
 
+def test_memory():
+    rc = RegimeClassifier(n_components=2)
+    rc.fit(X[:20, None])
+    assert len(rc.models) == 1
+    rc.fit(X[:, None])
+    assert len(rc.models) == 2
+
+
 def test_properties_with_no_models(rc):
     with pytest.raises(AttributeError):
         rc.model_
