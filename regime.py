@@ -65,7 +65,7 @@ class RegimeClassifier(BaseTransformer):
 
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
     
-    def reset() -> None:
+    def reset(self) -> None:
         pass
     
     @property
