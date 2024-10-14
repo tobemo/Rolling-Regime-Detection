@@ -1,6 +1,6 @@
 import pytest
-from hmm.vghmm import VariationalGaussianHMM
-from regime import get_transition_cost_matrix, get_regime_map, calculate_total_cost
+from rolling.hmm.vghmm import VariationalGaussianHMM
+from rolling.regime import get_transition_cost_matrix, get_regime_map, calculate_total_cost
 
 import numpy as np
 

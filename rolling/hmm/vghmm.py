@@ -6,7 +6,7 @@ import numpy as np
 from hmmlearn.vhmm import VariationalGaussianHMM as VGHMM
 from sklearn.utils.validation import check_is_fitted
 
-from hmm.base import HMMBase
+from rolling.hmm.base import HMMBase
 
 
 class VariationalGaussianHMM(HMMBase, VGHMM):

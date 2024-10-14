@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from hmm.vghmm import VariationalGaussianHMM
-from regime import RegimeClassifier
+from rolling.hmm.vghmm import VariationalGaussianHMM
+from rolling.regime import RegimeClassifier
 
 
 # earthquake data from http://earthquake.usgs.gov/

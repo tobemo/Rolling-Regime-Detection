@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from utils import (added_regime_costs_less, calculate_total_cost,
+from rolling.utils import (added_regime_costs_less, calculate_total_cost,
                    extend_startprob, extend_transmat, get_regime_map,
                    get_transition_cost_matrix, new_regime_is_advised,
                    old_regime_is_too_costly, sample_by)
