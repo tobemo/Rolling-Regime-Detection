@@ -399,6 +399,7 @@ class RegimeClassifier(BaseTransformer):
     def _transform(
             self,
             X: np.ndarray | pd.DataFrame,
+            y = None,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.DataFrame:
         """Find most likely state sequence corresponding to X of the last trained model."""
