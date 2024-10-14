@@ -169,13 +169,13 @@ def test_fit():
 
 def test_predict(rc_fitted):
     # np
-    rc_fitted.predict(X[:, None])
+    rc_fitted._predict(X[:, None])
     # pd
     X_ = pd.DataFrame(X)
-    rc_fitted.predict(X_)
+    rc_fitted._predict(X_)
     # pd with datetime index
     X_ = pd.DataFrame(X, index=ts)
-    rc_fitted.predict(X_)
+    rc_fitted._predict(X_)
 
 
 def test_predict_all(rc_fitted):
