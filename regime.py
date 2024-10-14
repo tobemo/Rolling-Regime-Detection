@@ -65,8 +65,8 @@ class RegimeClassifier(BaseTransformer):
 
         self.models = deque(maxlen=N_REGIME_CLASSIFIERS)
     
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({json.dumps(self.get_params())})"
+    def reset() -> None:
+        pass
     
     @property
     def logger(self) -> Logger:
