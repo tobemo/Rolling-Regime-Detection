@@ -120,14 +120,14 @@ def test_getitem(rc):
 
 def test_initial_fit():
     rc = RegimeClassifier(n_components=2, n_iter=5)
-    rc.initial_fit(X[:, None])
+    rc._initial_fit(X[:, None])
     assert rc.n_components == 2
 
     rc = RegimeClassifier(n_components=[2,3], n_iter=5)
-    rc.initial_fit(X[:, None])
+    rc._initial_fit(X[:, None])
 
     rc = RegimeClassifier(n_components=-1, n_iter=2)
-    rc.initial_fit(X[:, None])
+    rc._initial_fit(X[:, None])
 
 
 def test_transition_threshold(rc, rc_populated):

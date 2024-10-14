@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
+from sktime.transformations.base import BaseTransformer
 
 from .hmm.base import HMMBase
 from .hmm.vghmm import VariationalGaussianHMM
@@ -18,7 +19,7 @@ from .utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
 N_REGIME_CLASSIFIERS = int(os.getenv('MAX_REGIME_CLASSIFIERS', 128))
 
 
-class RegimeClassifier():
+class RegimeClassifier(BaseTransformer):
     """A wrapper class that fits and keeps track of hidden Markov models over time. At each fitting it checks whether it makes sense to add one regime or not. This to try to capture the emerge of new regimes over time.
     The label assignment of each new model is matched with the preceding model to ensure a continuous labeling. Otherwise there is no guarantee that model_t and model_t-1 will use the same label when talking about the same regime.
 
@@ -32,7 +33,15 @@ class RegimeClassifier():
     transition cost: The distance between the distributions of the regimes at t_n and at t_n-1. Minimized to match labels from regimes_n-1 with those of regimes_n
 
     At each new fit both a model with the same number of regimes as last time (K), as well as a model with 1 more regime (K+1), are fitted. The one with an extra regime, K+1, is used if it is both cheaper than K, and, the K one has a cost that exceeds a certain threshold (in this implementation μ+n*σ is used, see `transition_threshold`).
-    - """
+    """
+    _tags = {
+        "X_inner_mtype": 'pd.DataFrame',
+        "fit_is_empty": False,
+        "capability:unequal_length": True,
+        "handles-missing-data": True,
+        "scitype:transform-input": "Series",
+        "scitype:transform-output": "Series",
+    }
     def __init__(
             self,
             n_components: int | list[int] = -1,
@@ -136,10 +145,6 @@ class RegimeClassifier():
             return self.model_.is_fitted
         return False
     
-    def __sklearn_is_fitted__(self) -> bool:
-        # https://scikit-learn.org/stable/developers/develop.html#developer-api-for-check-is-fitted
-        return self.is_fitted
-    
     _deviation_mult = 2
     """How many deviations of the mean the transition cost needs to be before a new regime is added."""
     
@@ -172,7 +177,7 @@ class RegimeClassifier():
     def transition_threshold(self, threshold: float) -> float:
         self._transition_threshold = threshold
 
-    def initial_fit(
+    def _initial_fit(
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]] = None,
@@ -264,14 +269,14 @@ class RegimeClassifier():
 
         # catch initial fit failing
         try:
-            self.initial_fit(X, lengths=lengths)
+            self._initial_fit(X, lengths=lengths)
         except Exception as e:
             self.logger.critical("Initial fit failed as well, now stuck with last working model for a while.")
             self.logger.exception(e)
             # reset counter
             self.fit_can_fail_this_many_times = self._n_allowed_fails
 
-    def fit(
+    def _fit(
             self,
             X: np.ndarray | pd.DataFrame,
             y = None,
@@ -290,7 +295,7 @@ class RegimeClassifier():
         
         # call initial fit if no models exist
         if not self.has_models:
-            return self.initial_fit(X, lengths=lengths)
+            return self._initial_fit(X, lengths=lengths)
         
         # model 1: previous model
         previous_model = copy_model(self.model_)
@@ -383,13 +388,21 @@ class RegimeClassifier():
         self.model_ = best_model
         return self
     
-    def predict(
+    def _predict(
             self,
             X: np.ndarray | pd.DataFrame,
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.DataFrame:
         """Find most likely state sequence corresponding to X of the last trained model."""
         return self.model_.predict(X, lengths=lengths)
+    
+    def _transform(
+            self,
+            X: np.ndarray | pd.DataFrame,
+            lengths: Optional[list[int]]=None
+        ) -> np.ndarray | pd.DataFrame:
+        """Find most likely state sequence corresponding to X of the last trained model."""
+        return self._predict(X, lengths=lengths)
     
     def score(
             self,
@@ -398,26 +411,6 @@ class RegimeClassifier():
             lengths: Optional[list[int]]=None,
     ) -> float:
         return self.model_.bic(X, lengths=lengths)
-    
-    def fit_predict(
-            self,
-            X: np.ndarray | pd.DataFrame,
-            y = None,
-            lengths: Optional[list[int]]=None
-        ) -> np.ndarray | pd.DataFrame:
-        """Chains `fit` and `predict`."""
-        self.fit(X, lengths=lengths)
-        return self.predict(X, lengths=lengths)
-                            
-    def fit_transform(
-            self,
-            X: np.ndarray | pd.DataFrame,
-            y = None,
-            lengths: Optional[list[int]]=None
-        ) -> np.ndarray | pd.DataFrame:
-        """Chains `fit` and `predict`."""
-        self.fit(X, lengths=lengths)
-        return self.predict(X, lengths=lengths)
     
     def predict_proba(
             self,
