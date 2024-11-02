@@ -10,9 +10,9 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 from sktime.transformations.base import BaseTransformer
 
-from rolling.hmm.base import HMMBase
-from rolling.hmm.vghmm import VariationalGaussianHMM
-from rolling.utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
+from .hmm.base import HMMBase
+from .hmm.vghmm import VariationalGaussianHMM
+from .utils import (add_extra_regime_to_map, calculate_total_cost, copy_model,
                    get_regime_map, get_transition_cost_matrix,
                    new_model_collapsed, transfer_model, sample_by)
 
