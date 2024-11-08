@@ -254,7 +254,9 @@ class HMMBase(ABC):
         return False
 
     def _compare_unfitted(self, other) -> bool:
-        keys_to_compare = ['n_components', 'init_params', 'n_iter', 'tol']
+        keys_to_compare = [
+            'n_components', 'init_params', 'n_iter', 'tol', 'name'
+        ]
 
         return all([
             self.get_params()[k] == other.get_params()[k] 
@@ -262,6 +264,8 @@ class HMMBase(ABC):
         ])
     
     def _compare_fitted(self, other) -> bool:
+        if other.name != self.name:
+            return False
         return (
             np.array_equal(self.startprob_, other.startprob_) and
             np.array_equal(self.transmat_, other.transmat_) and

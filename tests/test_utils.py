@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rolling.hmm.vghmm import VariationalGaussianHMM
 from rolling.utils import (added_regime_costs_less, calculate_total_cost,
-                   extend_startprob, extend_transmat, get_regime_map,
-                   get_transition_cost_matrix, new_regime_is_advised,
-                   old_regime_is_too_costly, sample_by)
+                           copy_model, extend_startprob, extend_transmat,
+                           get_regime_map, get_transition_cost_matrix,
+                           new_regime_is_advised, old_regime_is_too_costly,
+                           sample_by)
 
 
 def test_extend_transmat():
@@ -200,3 +202,23 @@ def test_sampling_by():
         p=np.concatenate([np.linspace(0,1, 20), np.zeros(2)])
     )
     assert s[-1] == 0
+
+
+def test_copy():
+    X = np.array([
+        13, 14, 8, 10, 16, 26, 32, 27, 18, 32, 36, 24, 22, 23, 22, 18,
+        25, 21, 21, 14, 8, 11, 14, 23, 18, 17, 19, 20, 22, 19, 13, 26,
+        13, 14, 22, 24, 21, 22, 26, 21, 23, 24, 27, 41, 31, 27, 35, 26,
+        28, 36, 39, 21, 17, 22, 17, 19, 15, 34, 10, 15, 22, 18, 15, 20,
+        15, 22, 19, 16, 30, 27, 29, 23, 20, 16, 21, 21, 25, 16, 18, 15,
+        18, 14, 10, 15, 8, 15, 6, 11, 8, 7, 18, 16, 13, 12, 13, 20,
+        15, 16, 12, 18, 15, 16, 13, 15, 16, 11, 11
+    ])
+    a = VariationalGaussianHMM(name='foo')
+    a.fit(X[:, None])
+    b = copy_model(a)
+    assert a == b
+
+    b.name = 'bar'
+    assert a != b
+
