@@ -67,8 +67,9 @@ class HMMBase(ABC):
         _validate_mapping(m, self.n_components)
         self._mapping = m
     
-    def __init__(self) -> None:
+    def __init__(self, name: str = 'Regime') -> None:
         super().__init__()
+        self.name = name
         self._transition_cost = np.inf
     
     def _multi_fit(self,
@@ -130,11 +131,11 @@ class HMMBase(ABC):
             lengths: Optional[list[int]]=None
         ) -> np.ndarray | pd.Series:
         """Find most likely state sequence corresponding to ``X``.
-        This call is without mapping, under the hood it just calls the original predict method.."""
+        This call is without mapping, under the hood it just calls the original predict method."""
         check_is_fitted(self)
         predictions = super().predict(X, lengths=lengths)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.Series(predictions, index=X.index, name='Regime')
+            predictions = pd.Series(predictions, index=X.index, name=self.name)
         return predictions
 
     def predict(
@@ -149,7 +150,7 @@ class HMMBase(ABC):
             predictions = predictions.to_numpy()
         predictions = self.map_predictions(predictions)
         if isinstance(X, pd.DataFrame):
-            predictions = pd.Series(predictions, index=X.index, name='Regime')
+            predictions = pd.Series(predictions, index=X.index, name=self.name)
         return predictions
     
     def fit_predict(

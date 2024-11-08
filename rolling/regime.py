@@ -202,7 +202,6 @@ class RegimeClassifier(BaseTransformer):
             # first find the best initialization 
             # for the current number of regimes
             cfg = self.get_params()
-            cfg.pop('name')
             cfg.pop('successive_n_iter')
             cfg.pop('successive_tol')
             cfg['init_params'] = 'stmc'

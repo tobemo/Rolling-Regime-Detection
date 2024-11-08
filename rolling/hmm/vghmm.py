@@ -39,9 +39,10 @@ class VariationalGaussianHMM(HMMBase, VGHMM):
             n_iter=100,
             tol=1e-6,
             verbose=False,
+            name: str = 'Regime'
         ) -> None:
         """If random state is set, one model is fitted, if random state is None, k models are fitted and the best one is kept, see `fit` and `multi_fit`.`"""
-        HMMBase.__init__(self)
+        HMMBase.__init__(self, name=name)
         VGHMM.__init__(
             self,
             covariance_type="full",
