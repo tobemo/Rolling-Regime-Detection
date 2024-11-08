@@ -138,6 +138,14 @@ def test_initial_fit():
     rc._initial_fit(X[:, None])
 
 
+def test_name():
+    rc = RegimeClassifier(n_components=2, n_iter=5, name="Test")
+    rc._initial_fit(X[:, None])
+    assert rc.name == "Test"
+    y = rc._predict(pd.DataFrame(X[:, None]))
+    assert y.name == "Test"
+
+
 def test_transition_threshold(rc, rc_populated):
     # no models
     assert rc.transition_threshold == np.inf

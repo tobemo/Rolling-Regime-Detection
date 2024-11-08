@@ -189,6 +189,7 @@ class HMMBase(ABC):
             "n_iter": self.n_iter,
             "tol": self.tol,
             "verbose": self.verbose,
+            "name": self.name,
         }
     
     def set_params(self, **parameters):
